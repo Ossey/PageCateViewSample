@@ -52,10 +52,15 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 /** 标题按钮缩放比例, 默认为0, 有效范围0.0~1.0 */
 @property (nonatomic, assign) CGFloat itemTitleScale;
 
+- (instancetype)initWithFrame:(CGRect)frame;
+
 - (instancetype)initWithFrame:(CGRect)frame
                      delegate:(id<PageCateButtonViewDelegate>)delegate
                     cateItems:(NSArray<PageCateButtonItem *> *)cateItems
               rightItem:(PageCateButtonItem *)rightItem;
+- (instancetype)initWithFrame:(CGRect)frame
+                    cateItems:(NSArray<PageCateButtonItem *> *)cateItems
+                    rightItem:(PageCateButtonItem *)rightItem;
 
 - (void)setButtonItemTitle:(NSString *)title index:(NSInteger)index;
 

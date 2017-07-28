@@ -34,51 +34,57 @@
 
 - (void)setupPageView {
     
-    Sample1TableViewController *oneVC = [[Sample1TableViewController alloc] init];
-    oneVC.view.backgroundColor = [UIColor yellowColor];
-    Sample1TableViewController *twoVC = [[Sample1TableViewController alloc] init];
-    oneVC.view.backgroundColor = [UIColor blueColor];
-    Sample1TableViewController *threeVC = [[Sample1TableViewController alloc] init];
-    oneVC.view.backgroundColor = [UIColor orangeColor];
-    Sample1TableViewController *fourVC = [[Sample1TableViewController alloc] init];
-    oneVC.view.backgroundColor = [UIColor greenColor];
     
-    NSMutableArray *childArr = @[oneVC, twoVC, threeVC, fourVC].mutableCopy;
     /// pageContentView
     CGFloat contentViewHeight = self.view.frame.size.height - 108;
     
-    self.pageContentView = [[PageContainerView alloc] initWithFrame:CGRectMake(0, 108, self.view.frame.size.width, contentViewHeight) parentVC:self childVCs:childArr];
-    _pageContentView.delegate = self;
+    self.pageContentView = [[PageContainerView alloc] initWithFrame:CGRectMake(0, 125, self.view.frame.size.width, contentViewHeight) delegate:self];
     [self.view addSubview:_pageContentView];
+
     
-    NSMutableArray *titleArr = @[@"精选", @"电影", @"OC", @"Swift"].mutableCopy;
+}
+
+
+- (void)pageContainerView:(PageContainerView *)pageContentView didScrollWithProgress:(CGFloat)progress fromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex {
+    [self.pageTitleView setPageTitleViewWithProgress:progress formIndex:fromIndex toIndex:toIndex];
+}
+
+- (UIView *)pageCateChannelViewForContainerView:(PageContainerView *)containerView forIndex:(NSInteger)index {
     
-    [titleArr enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        PageCateButtonItem *item = [PageCateButtonItem new];
-        item.title = obj;
-        [titleArr replaceObjectAtIndex:idx withObject:item];
-    }];
-    /// pageTitleView
-    self.pageTitleView = [[PageCateButtonView alloc] initWithFrame:CGRectMake(0, 64, self.view.frame.size.width, 44) delegate:self cateItems:titleArr rightItem:nil];
-    [self.view addSubview:_pageTitleView];
-    _pageTitleView.underLineCanScroll = NO;
-    _pageTitleView.selectedIndex = 1;
+    return self.childViewControllers[index].view;
 }
 
-- (void)pageCateButtonView:(PageCateButtonView *)view didSelectedAtIndex:(NSInteger)index {
-    [self.pageContentView setPageCententViewCurrentIndex:index];
+- (PageCateButtonView *)pageCateButtonViewForContainerView {
+    return self.pageTitleView;
+    
 }
 
-- (void)pageTitleView:(PageCateButtonView *)pageTitleView selectedIndex:(NSInteger)selectedIndex {
-    [self.pageContentView setPageCententViewCurrentIndex:selectedIndex];
+- (PageCateButtonView *)pageTitleView {
+    if (!_pageTitleView) {
+        NSMutableArray *vcs = @[].mutableCopy;
+        NSMutableArray *buttonItems = @[].mutableCopy;
+        NSInteger i = 0;
+        do {
+            Sample1TableViewController *vc = [[Sample1TableViewController alloc] init];
+            [vcs addObject:vc];
+            PageCateButtonItem *buttonItem = [PageCateButtonItem new];
+            buttonItem.contentWidth = 60;
+            buttonItem.title = [NSString stringWithFormat:@"list%ld", i];
+            buttonItem.imageName = [NSString stringWithFormat:@"trip_sharing_%ld_publish_selected", i+1];
+            [buttonItems addObject:buttonItem];
+            [self addChildViewController:vc];
+            i++;
+        } while (i < 14);
+        _pageTitleView = [[PageCateButtonView alloc] initWithFrame:CGRectMake(0, 64, self.view.frame.size.width, 60)];
+        [self.view addSubview:_pageTitleView];
+        _pageTitleView.cateItems = buttonItems;
+        _pageTitleView.underLineCanScroll = YES;
+        _pageTitleView.selectedIndex = 1;
+
+    }
+    [self.view bringSubviewToFront:_pageTitleView];
+    return _pageTitleView;
 }
-
-- (void)pageContainerView:(PageContainerView *)pageContentView progress:(CGFloat)progress fromIndex:(NSInteger)fromItem toIndex:(NSInteger)toIndex {
-    [self.pageTitleView setPageTitleViewWithProgress:progress formIndex:fromItem toIndex:toIndex];
-
-}
-
-
 
 
 @end

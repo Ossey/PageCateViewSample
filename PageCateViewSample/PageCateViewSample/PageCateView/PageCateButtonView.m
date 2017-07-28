@@ -8,6 +8,23 @@
 
 #import "PageCateButtonView.h"
 
+
+typedef NS_ENUM(NSUInteger, PageCateButtonEdgeInsetsStyle) {
+    PageCateButtonEdgeInsetsStyleImageLeft,
+    PageCateButtonEdgeInsetsStyleImageRight,
+    PageCateButtonEdgeInsetsStyleImageTop,
+    PageCateButtonEdgeInsetsStyleImageBottom
+};
+
+@interface PageCateButton : UIButton
+
+@property (nonatomic) PageCateButtonEdgeInsetsStyle edgeInsetsStyle;
+
+@property (nonatomic) CGFloat imageTitleSpace;
+
+@end
+
+
 @interface NSString (DrawingAdditions)
 
 - (CGSize)sizeWithMaxSize:(CGSize)maxSize font:(UIFont*)font;
@@ -20,7 +37,6 @@
 
 @interface PageCateButtonView ()
 
-/** scrollView 所有button的父控件 */
 @property (nonatomic, strong) UIScrollView *cateTitleView;
 /** 根据所有button 和 间距 计算到的总宽度 */
 @property (nonatomic, assign) CGFloat scrollViewContentWidth;
@@ -31,6 +47,8 @@
 /** 上次选中的按钮 */
 @property (nonatomic, weak) PageCateButtonItem *previousSelectedBtnItem;
 
+@property (nonatomic, assign) BOOL fristAppearUnderLine;
+
 @end
 
 @implementation PageCateButtonView
@@ -39,6 +57,15 @@
 underLineImage = _underLineImage,
 underLineBackgroundColor = _underLineBackgroundColor,
 selectedIndex = _selectedIndex;
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    return [self initWithFrame:frame delegate:nil cateItems:nil rightItem:nil];
+}
+
+- (instancetype)initWithFrame:(CGRect)frame cateItems:(NSArray<PageCateButtonItem *> *)cateItems rightItem:(PageCateButtonItem *)rightItem {
+    
+    return [self initWithFrame:frame delegate:nil cateItems:cateItems rightItem:rightItem];
+}
 
 - (instancetype)initWithFrame:(CGRect)frame delegate:(id<PageCateButtonViewDelegate>)delegate cateItems:(NSArray<PageCateButtonItem *> *)cateItems rightItem:(PageCateButtonItem *)rightItem {
     
@@ -50,13 +77,20 @@ selectedIndex = _selectedIndex;
         _buttonMargin = 10;
         _underLineHeight = 1.0;
         _separatorHeight = 1.0;
+        _automaticCenter = YES;
         _underLineBackgroundColor = [UIColor redColor];
         _separatorBackgroundColor = [UIColor blueColor];
-        self.cateItems = cateItems;
-        self.underLineStyle = PageCateButtonViewUnderLineStyleDefault;
-        self.separatorStyle = PageCateButtonViewSeparatorStyleDefault;
+        _cateItems = cateItems;
+        _fristAppearUnderLine = YES;
+        _underLineStyle = PageCateButtonViewUnderLineStyleDefault;
+        _separatorStyle = PageCateButtonViewSeparatorStyleDefault;
     }
     return self;
+}
+
+- (void)setDelegate:(id<PageCateButtonViewDelegate>)delegate {
+    _delegate = delegate;
+    [self reloadSubviews];
 }
 
 - (void)setCateItems:(NSArray<PageCateButtonItem *> *)cateItems {
@@ -65,8 +99,14 @@ selectedIndex = _selectedIndex;
     [self reloadSubviews];
 }
 
+- (void)setRightItem:(PageCateButtonItem *)rightItem {
+    _rightItem = rightItem;
+    
+    [self reloadSubviews];
+}
+
 - (void)reloadSubviews {
-        
+    
     for (NSInteger i = 0; i < self.cateItems.count; ++i) {
         PageCateButtonItem *buttonItem = self.cateItems[i];
         self.scrollViewContentWidth += buttonItem.contentWidth;
@@ -104,6 +144,7 @@ selectedIndex = _selectedIndex;
                 [weakSelf rightButtonItemClick:item];
             };
             [self.cateTitleView addSubview:self.rightItem.button];
+            
         }
         CGFloat scrollViewWidth = self.rightItem ? CGRectGetMaxX(self.rightItem.button.frame) : CGRectGetMaxX(self.cateItems.lastObject.button.frame);
         self.cateTitleView.contentSize = CGSizeMake(scrollViewWidth, self.bounds.size.height);
@@ -138,6 +179,8 @@ selectedIndex = _selectedIndex;
     }
     
     [self setSelectedIndex:self.selectedIndex];
+    [self setUnderLineStyle:_underLineStyle];
+    [self setSeparatorStyle:_separatorStyle];
 }
 
 
@@ -298,7 +341,7 @@ selectedIndex = _selectedIndex;
 }
 
 - (void)updateUpderLinePointForButtonItem:(PageCateButtonItem *)buttonItem {
-    [UIView animateWithDuration:0.15 animations:^{
+    void (^animationBlock)() = ^{
         CGRect underLineFrame = self.underLineView.frame;
         underLineFrame.size.width = buttonItem.contentWidth;
         underLineFrame.size.height = _underLineHeight;
@@ -307,7 +350,16 @@ selectedIndex = _selectedIndex;
         CGPoint center = self.underLineView.center;
         center.x = buttonItem.button.center.x;
         self.underLineView.center = center;
-    }];
+    };
+    
+    if (_fristAppearUnderLine) {
+        animationBlock();
+    } else {
+        [UIView animateWithDuration:0.15 animations:animationBlock completion:^(BOOL finished) {
+            _fristAppearUnderLine = NO;
+        }];
+    }
+    
 }
 
 /// 给外界提供的方法
@@ -388,7 +440,7 @@ selectedIndex = _selectedIndex;
     /// 计算 toItem／fromItem 之间的距离
     CGFloat totalOffsetX = toItem.button.frame.origin.x - fromItem.button.frame.origin.x;
     /// 计算 toItem／fromItem 宽度的差值
-    CGFloat totalDistance = CGRectGetMaxX(fromItem.button.frame) - CGRectGetMaxX(toItem.button.frame);
+    CGFloat totalDistance = CGRectGetMaxX(toItem.button.frame) - CGRectGetMaxX(fromItem.button.frame);
     /// 计算 underLineView 滚动时 X 的偏移量
     CGFloat offsetX;
     /// 计算 underLineView 滚动时宽度的偏移量
@@ -397,7 +449,8 @@ selectedIndex = _selectedIndex;
     /// 计算 underLineView 新的 frame
     CGRect underLineFrame = self.underLineView.frame;
     underLineFrame.origin.x = fromItem.button.frame.origin.x + offsetX;
-    underLineFrame.size.width = fromItem.contentWidth + distance;
+    underLineFrame.size.width = fromItem.button.frame.size.width + distance;
+    self.underLineView.frame = underLineFrame;
 }
 
 
@@ -526,11 +579,15 @@ selectedIndex = _selectedIndex;
 {
     self = [super init];
     if (self) {
-        _button = [UIButton buttonWithType:UIButtonTypeCustom];
+        _button = [PageCateButton buttonWithType:UIButtonTypeCustom];
         _button.titleLabel.font = self.textFont;
+        _button.imageView.contentMode = UIViewContentModeScaleAspectFit;
+        _button.contentMode = UIViewContentModeScaleAspectFit;
         [_button setTitleColor:[UIColor blackColor] forState:(UIControlStateNormal)];
         [_button setTitleColor:[UIColor redColor] forState:(UIControlStateSelected)];
         [_button addTarget:self action:@selector(buttonClick:) forControlEvents:UIControlEventTouchUpInside];
+        PageCateButton *btn = (PageCateButton *)_button;
+        btn.edgeInsetsStyle = PageCateButtonEdgeInsetsStyleImageTop;
     }
     return self;
 }
@@ -556,7 +613,9 @@ selectedIndex = _selectedIndex;
 
 - (void)setImageName:(NSString *)imageName {
     _imageName = imageName;
-    [_button setImage:[UIImage imageNamed:imageName] forState:UIControlStateNormal];
+    UIImage *image = [UIImage imageNamed:imageName];
+//    image = [self scaleToSize:image size:CGSizeMake(30, 30)];
+    [_button setImage:image forState:UIControlStateNormal];
 }
 
 - (void)setTextFont:(UIFont *)textFont {
@@ -577,6 +636,7 @@ selectedIndex = _selectedIndex;
         /// 没有文字， 只有图片时
         if (!currentText.length && currentImage != nil) {
             return currentImage.size.width;
+            
         }
         
         /// 图片和文字都有
@@ -594,7 +654,17 @@ selectedIndex = _selectedIndex;
     return _textFont;
 }
 
-
+- (UIImage *)scaleToSize:(UIImage *)img size:(CGSize)size {
+    UIGraphicsBeginImageContext(size);
+    
+    [img drawInRect:CGRectMake(0, 0, size.width, size.height)];
+    
+    UIImage *scaledImage = UIGraphicsGetImageFromCurrentImageContext();
+    
+    UIGraphicsEndImageContext();
+    
+    return scaledImage;
+}
 
 @end
 
@@ -634,5 +704,147 @@ selectedIndex = _selectedIndex;
 @implementation DefaultUnderLineView
 
 
+
+@end
+
+
+@implementation PageCateButton
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+
+}
+
+- (void)setFrame:(CGRect)frame {
+    [super setFrame:frame];
+    self.edgeInsetsStyle = _edgeInsetsStyle;
+}
+
+- (void)setImage:(UIImage *)image forState:(UIControlState)state {
+    [super setImage:image forState:state];
+    [self setEdgeInsetsStyle:_edgeInsetsStyle];
+}
+
+- (void)setTitle:(NSString *)title forState:(UIControlState)state {
+    [super setTitle:title forState:state];
+    [self setEdgeInsetsStyle:_edgeInsetsStyle];
+}
+
+- (void)setEdgeInsetsStyle:(PageCateButtonEdgeInsetsStyle)edgeInsetsStyle {
+    
+    [self setTitleEdgeInsets:UIEdgeInsetsZero];
+    [self setImageEdgeInsets:UIEdgeInsetsZero];
+    
+    [self layoutIfNeeded];
+    
+    _edgeInsetsStyle = edgeInsetsStyle;
+    CGFloat space = self.imageTitleSpace;
+    CGFloat imageViewWidth = CGRectGetWidth(self.imageView.frame);
+    CGFloat labelWidth = CGRectGetWidth(self.titleLabel.frame);
+    
+    if (labelWidth == 0) {
+        CGSize titleSize = [self.titleLabel.text sizeWithAttributes:@{NSFontAttributeName:self.titleLabel.font}];
+        labelWidth  = titleSize.width;
+    }
+    
+    CGFloat imageInsetsTop = 0.0f;
+    CGFloat imageInsetsLeft = 0.0f;
+    CGFloat imageInsetsBottom = 0.0f;
+    CGFloat imageInsetsRight = 0.0f;
+    
+    CGFloat titleInsetsTop = 0.0f;
+    CGFloat titleInsetsLeft = 0.0f;
+    CGFloat titleInsetsBottom = 0.0f;
+    CGFloat titleInsetsRight = 0.0f;
+    
+    switch (edgeInsetsStyle) {
+        case PageCateButtonEdgeInsetsStyleImageRight:
+        {
+            space = space * 0.5;
+            
+            imageInsetsLeft = labelWidth + space;
+            imageInsetsRight = -imageInsetsLeft;
+            
+            titleInsetsLeft = - (imageViewWidth + space);
+            titleInsetsRight = -titleInsetsLeft;
+        }
+            break;
+            
+        case PageCateButtonEdgeInsetsStyleImageLeft:
+        {
+            space = space * 0.5;
+            
+            imageInsetsLeft = -space;
+            imageInsetsRight = -imageInsetsLeft;
+            
+            titleInsetsLeft = space;
+            titleInsetsRight = -titleInsetsLeft;
+        }
+            break;
+        case PageCateButtonEdgeInsetsStyleImageBottom:
+        {
+            CGFloat imageHeight = CGRectGetHeight(self.imageView.frame);
+            CGFloat labelHeight = CGRectGetHeight(self.titleLabel.frame);
+            CGFloat buttonHeight = CGRectGetHeight(self.frame);
+            CGFloat boundsCentery = (imageHeight + space + labelHeight) * 0.5;
+            
+            CGFloat centerX_button = CGRectGetMidX(self.bounds); // bounds
+            CGFloat centerX_titleLabel = CGRectGetMidX(self.titleLabel.frame);
+            CGFloat centerX_image = CGRectGetMidX(self.imageView.frame);
+            
+            CGFloat imageBottomY = CGRectGetMaxY(self.imageView.frame);
+            CGFloat titleTopY = CGRectGetMinY(self.titleLabel.frame);
+            
+            imageInsetsTop = buttonHeight - (buttonHeight * 0.5 - boundsCentery) - imageBottomY;
+            imageInsetsLeft = centerX_button - centerX_image;
+            imageInsetsRight = - imageInsetsLeft;
+            imageInsetsBottom = - imageInsetsTop;
+            
+            titleInsetsTop = (buttonHeight * 0.5 - boundsCentery) - titleTopY;
+            titleInsetsLeft = -(centerX_titleLabel - centerX_button);
+            titleInsetsRight = - titleInsetsLeft;
+            titleInsetsBottom = - titleInsetsTop;
+            
+        }
+            break;
+        case PageCateButtonEdgeInsetsStyleImageTop:
+        {
+            CGFloat imageHeight = CGRectGetHeight(self.imageView.frame);
+            CGFloat labelHeight = CGRectGetHeight(self.titleLabel.frame);
+            CGFloat buttonHeight = CGRectGetHeight(self.frame);
+            CGFloat boundsCentery = (imageHeight + space + labelHeight) * 0.5;
+            
+            CGFloat centerX_button = CGRectGetMidX(self.bounds); // bounds
+            CGFloat centerX_titleLabel = CGRectGetMidX(self.titleLabel.frame);
+            CGFloat centerX_image = CGRectGetMidX(self.imageView.frame);
+            
+            CGFloat imageTopY = CGRectGetMinY(self.imageView.frame);
+            CGFloat titleBottom = CGRectGetMaxY(self.titleLabel.frame);
+            
+            imageInsetsTop = (buttonHeight * 0.5 - boundsCentery) - imageTopY;
+            imageInsetsLeft = centerX_button - centerX_image;
+            imageInsetsRight = - imageInsetsLeft;
+            imageInsetsBottom = - imageInsetsTop;
+            
+            titleInsetsTop = buttonHeight - (buttonHeight * 0.5 - boundsCentery) - titleBottom;
+            titleInsetsLeft = -(centerX_titleLabel - centerX_button);
+            titleInsetsRight = - titleInsetsLeft;
+            titleInsetsBottom = - titleInsetsTop;
+        }
+            break;
+            
+        default:
+            break;
+    }
+    
+    self.imageEdgeInsets = UIEdgeInsetsMake(imageInsetsTop, imageInsetsLeft, imageInsetsBottom, imageInsetsRight);
+    self.titleEdgeInsets = UIEdgeInsetsMake(titleInsetsTop, titleInsetsLeft, titleInsetsBottom, titleInsetsRight);
+}
+
+- (void)setImageTitleSpace:(CGFloat)imageTitleSpace {
+    _imageTitleSpace = imageTitleSpace;
+    
+    [self setEdgeInsetsStyle:_edgeInsetsStyle];
+}
 
 @end

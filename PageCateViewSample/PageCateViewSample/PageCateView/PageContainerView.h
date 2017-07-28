@@ -7,32 +7,31 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "PageCateButtonView.h"
 
 @class PageContainerView;
 
 @protocol PageContainerViewDelegate <NSObject>
 
+@required
+- (PageCateButtonView *)pageCateButtonViewForContainerView;
+
 @optional
-- (void)pageContainerView:(PageContainerView *)pageContentView progress:(CGFloat)progress fromIndex:(NSInteger)fromItem toIndex:(NSInteger)toIndex;
+- (UIView *)pageCateChannelViewForContainerView:(PageContainerView *)containerView forIndex:(NSInteger)index;
+- (void)pageContainerView:(PageContainerView *)pageContentView didScrollWithProgress:(CGFloat)progress fromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex;
+- (void)pageCateButtonView:(PageCateButtonView *)view didSelectedAtIndex:(NSInteger)index;
 
 @end
 
 @interface PageContainerView : UIView
 
-/**
- *  对象方法创建 SGPageContentView
- *
- *  @param frame     frame
- *  @param parentVC     当前控制器
- *  @param childVCs     子控制器个数
- */
-- (instancetype)initWithFrame:(CGRect)frame parentVC:(UIViewController *)parentVC childVCs:(NSArray *)childVCs;
+- (instancetype)initWithFrame:(CGRect)frame parentViewController:(UIViewController *)parentViewController childViewControllers:(NSArray *)childViewControllers;
 
+- (instancetype)initWithFrame:(CGRect)frame delegate:(id<PageContainerViewDelegate>)delegate;
 
 @property (nonatomic, weak) id<PageContainerViewDelegate> delegate;
-@property (nonatomic, assign) BOOL isScrollEnabled;
+@property (nonatomic, assign) BOOL scrollEnabled;
 
-/** 给外界提供的方法，获取 SGPageTitleView 选中按钮的下标, 必须实现 */
-- (void)setPageCententViewCurrentIndex:(NSInteger)currentIndex;
+- (void)scrollToIndex:(NSInteger)toIndex;
 
 @end

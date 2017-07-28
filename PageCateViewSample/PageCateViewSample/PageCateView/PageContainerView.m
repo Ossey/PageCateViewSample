@@ -7,157 +7,260 @@
 //
 
 #import "PageContainerView.h"
+#import "Masonry.h"
 
-@interface PageContainerView () <UICollectionViewDelegate, UICollectionViewDataSource>
+@interface PageContainerViewFlowLayout : UICollectionViewFlowLayout
 
-/// 外界父控制器
+@end
+
+@interface PageContainerViewCell : UICollectionViewCell
+
+@property (nonatomic, strong) UIView *channelView;
+
+@end
+
+@interface PageContainerView () <UICollectionViewDelegate, UICollectionViewDataSource, PageCateButtonViewDelegate>
+
 @property (nonatomic, weak) UIViewController *parentViewController;
-/// 存储子控制器
 @property (nonatomic, strong) NSArray *childViewControllers;
-/// collectionView
 @property (nonatomic, strong) UICollectionView *collectionView;
-/// 记录刚开始时的偏移量
-@property (nonatomic, assign) NSInteger startOffsetX;
-/// 标记按钮是否点击
-@property (nonatomic, assign) BOOL isClickBtn;
+@property (nonatomic, assign) CGPoint startScrollOffset;
+@property (nonatomic, strong) PageCateButtonView *cateButtonView;
+@property (nonatomic, strong) PageContainerViewFlowLayout *flowLayout;
+@property (nonatomic, assign) NSInteger totalChanelCount;
+
+/** 触发页面滚动的对象：PageContainerView 或 PageCateButtonItem */
+@property (nonatomic, weak) id triggerScrollTarget;
+
 
 @end
 
 @implementation PageContainerView
 
-- (instancetype)initWithFrame:(CGRect)frame parentVC:(UIViewController *)parentVC childVCs:(NSArray *)childVCs {
+- (instancetype)initWithFrame:(CGRect)frame parentViewController:(UIViewController *)parentViewController childViewControllers:(NSArray *)childViewControllers {
     if (self = [super initWithFrame:frame]) {
-        self.parentViewController = parentVC;
-        self.childViewControllers = childVCs;
-        
-        [self setup];
+        self.parentViewController = parentViewController;
+        self.childViewControllers = childViewControllers;
+        for (UIViewController *vc in self.childViewControllers) {
+            [self.parentViewController addChildViewController:vc];
+        }
+        [self __setup];
     }
     return self;
 }
 
+- (instancetype)initWithFrame:(CGRect)frame delegate:(id<PageContainerViewDelegate>)delegate {
+    if (self = [super initWithFrame:frame]) {
+        self.delegate = delegate;
+        [self __setup];
+    }
+    return self;
+}
 
 - (UICollectionView *)collectionView {
     if (!_collectionView) {
-        UICollectionViewFlowLayout *flowLayout = [[UICollectionViewFlowLayout alloc] init];
-        flowLayout.itemSize = self.bounds.size;
-        flowLayout.minimumLineSpacing = 0;
-        flowLayout.minimumInteritemSpacing = 0;
-        flowLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
-        CGFloat collectionViewX = 0;
-        CGFloat collectionViewY = 0;
-        CGFloat collectionViewW = self.frame.size.width;
-        CGFloat collectionViewH = self.frame.size.height;
-        _collectionView = [[UICollectionView alloc] initWithFrame:CGRectMake(collectionViewX, collectionViewY, collectionViewW, collectionViewH) collectionViewLayout:flowLayout];
+        _flowLayout = [PageContainerViewFlowLayout new];
+        _collectionView = [[UICollectionView alloc] initWithFrame:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) collectionViewLayout:_flowLayout];
         _collectionView.showsHorizontalScrollIndicator = NO;
         _collectionView.pagingEnabled = YES;
         _collectionView.bounces = NO;
         _collectionView.backgroundColor = [UIColor whiteColor];
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
-        [_collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"cell"];
+        [_collectionView registerClass:[PageContainerViewCell class] forCellWithReuseIdentifier:@"PageContainerView.PageContainerViewCell"];
     }
     return _collectionView;
 }
 
-- (void)setup {
-    self.isClickBtn = NO;
-    self.startOffsetX = 0;
+- (void)__setup {
+    self.startScrollOffset = CGPointZero;
     
-    // 1、将所有的子控制器添加父控制器中
-    for (UIViewController *childVC in self.childViewControllers) {
-        [self.parentViewController addChildViewController:childVC];
-    }
-    
-    UIView *tempView = [[UIView alloc] initWithFrame:CGRectZero];
-    [self addSubview:tempView];
-    
-    // 2、添加UICollectionView, 用于在Cell中存放控制器的View
     [self addSubview:self.collectionView];
 }
 
-/// UICollectionViewDataSource
+- (void)setDelegate:(id<PageContainerViewDelegate>)delegate {
+    if (_delegate == delegate) {
+        return;
+    }
+    _delegate = delegate;
+    
+    self.cateButtonView = [delegate pageCateButtonViewForContainerView];
+    self.cateButtonView.delegate = self;
+}
+
+-(UIViewController *)getCurrentViewController {
+    UIResponder *next = [self nextResponder];
+    do {
+        if ([next isKindOfClass:[UIViewController class]]) {
+            return (UIViewController *)next;
+        }
+        next = [next nextResponder];
+    } while (next != nil);
+    return nil;
+}
+
+- (void)setCateButtonView:(PageCateButtonView *)cateButtonView {
+    _cateButtonView = cateButtonView;
+    [self.collectionView reloadData];
+}
+
+- (void)setChildViewControllers:(NSArray *)childViewControllers {
+    _childViewControllers = childViewControllers;
+    [self.collectionView reloadData];
+}
+
+////////////////////////////////////////////////////////////////////////
+#pragma mark - UICollectionViewDataSource
+////////////////////////////////////////////////////////////////////////
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    return self.childViewControllers.count;
+    return self.totalChanelCount;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
-    UICollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"cell" forIndexPath:indexPath];
-    [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
-    // 设置内容
-    UIViewController *childVC = self.childViewControllers[indexPath.item];
-    childVC.view.frame = cell.contentView.frame;
-    [cell.contentView addSubview:childVC.view];
+    PageContainerViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"PageContainerView.PageContainerViewCell" forIndexPath:indexPath];
+    
+    UIView *channelView = nil;
+    if (self.delegate && [self.delegate respondsToSelector:@selector(pageCateChannelViewForContainerView:forIndex:)]) {
+        channelView = [self.delegate pageCateChannelViewForContainerView:self forIndex:indexPath.row];
+    } else {
+        UIViewController *childVC = self.childViewControllers[indexPath.item];
+        channelView = childVC.view;
+    }
+    cell.channelView = channelView;
     return cell;
 }
 
-/// UICollectionViewDelegate
+////////////////////////////////////////////////////////////////////////
+#pragma mark - UIScrollViewDelegate
+////////////////////////////////////////////////////////////////////////
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
-    self.isClickBtn = NO;
-    self.startOffsetX = scrollView.contentOffset.x;
+    self.triggerScrollTarget = self;
+    self.startScrollOffset = scrollView.contentOffset;
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    if (self.isClickBtn == YES) {
+    if (self.triggerScrollTarget == self.cateButtonView) {
         return;
     }
+    
+    [self __scrolling];
+}
 
+- (void)__scrolling {
     CGFloat progress = 0;
-    NSInteger originalIndex = 0;
-    NSInteger targetIndex = 0;
+    NSInteger fromIndex = 0;
+    NSInteger toIndex = 0;
     // 判断是左滑还是右滑
-    CGFloat currentOffsetX = scrollView.contentOffset.x;
-    CGFloat scrollViewW = scrollView.bounds.size.width;
-    if (currentOffsetX > self.startOffsetX) { // 左滑
-        // 计算 progress
+    CGFloat currentOffsetX = self.collectionView.contentOffset.x;
+    CGFloat scrollViewW = self.collectionView.bounds.size.width;
+    if (currentOffsetX > self.startScrollOffset.x) {
+        // 左滑
         progress = currentOffsetX / scrollViewW - floor(currentOffsetX / scrollViewW);
-        // 计算 originalIndex
-        originalIndex = currentOffsetX / scrollViewW;
-        // 计算 targetIndex
-        targetIndex = originalIndex + 1;
-        if (targetIndex >= self.childViewControllers.count) {
+        // 计算 fromIndex
+        fromIndex = currentOffsetX / scrollViewW;
+        // 计算 toIndex
+        toIndex = fromIndex + 1;
+        if (toIndex >= self.totalChanelCount) {
             progress = 1;
-            targetIndex = originalIndex;
+            toIndex = fromIndex;
         }
         // 如果完全划过去
-        if (currentOffsetX - self.startOffsetX == scrollViewW) {
+        if (currentOffsetX - self.startScrollOffset.x == scrollViewW) {
             progress = 1;
-            targetIndex = originalIndex;
-        }
-    } else { // 右滑
-        // 计算 progress
-        progress = 1 - (currentOffsetX / scrollViewW - floor(currentOffsetX / scrollViewW));
-        // 计算 targetIndex
-        targetIndex = currentOffsetX / scrollViewW;
-        // 计算 originalIndex
-        originalIndex = targetIndex + 1;
-        if (originalIndex >= self.childViewControllers.count) {
-            originalIndex = self.childViewControllers.count - 1;
+            toIndex = fromIndex;
         }
     }
-    // pageContentViewDelegare; 将 progress／sourceIndex／targetIndex 传递给 SGPageTitleView
-    if (self.delegate && [self.delegate respondsToSelector:@selector(pageContainerView:progress:fromIndex:toIndex:)]) {
-        [self.delegate pageContainerView:self progress:progress fromIndex:originalIndex toIndex:targetIndex];
+    else {
+        // 右滑
+        progress = 1 - (currentOffsetX / scrollViewW - floor(currentOffsetX / scrollViewW));
+        // 计算 toIndex
+        toIndex = currentOffsetX / scrollViewW;
+        // 计算 fromIndex
+        fromIndex = toIndex + 1;
+        if (fromIndex >= self.totalChanelCount) {
+            fromIndex = self.totalChanelCount - 1;
+        }
+    }
+    if (self.delegate && [self.delegate respondsToSelector:@selector(pageContainerView:didScrollWithProgress:fromIndex:toIndex:)]) {
+        [self.delegate pageContainerView:self didScrollWithProgress:progress fromIndex:fromIndex toIndex:toIndex];
     }
 }
 
-/// 给外界提供的方法，获取 PageCateButtonView 选中按钮的下标
-- (void)setPageCententViewCurrentIndex:(NSInteger)currentIndex {
-    self.isClickBtn = YES;
-    CGFloat offsetX = currentIndex * self.collectionView.frame.size.width;
+- (NSInteger)totalChanelCount {
+    if (self.cateButtonView) {
+        return self.cateButtonView.cateItems.count;
+    }
+    return self.childViewControllers.count;
+}
+- (void)scrollToIndex:(NSInteger)toIndex {
+    CGFloat offsetX = toIndex * self.collectionView.frame.size.width;
     self.collectionView.contentOffset = CGPointMake(offsetX, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////
-#pragma mark - 
+#pragma mark - PageCateButtonViewDelegate
 ////////////////////////////////////////////////////////////////////////
-- (void)setIsScrollEnabled:(BOOL)isScrollEnabled {
-    _isScrollEnabled = isScrollEnabled;
-    if (isScrollEnabled) {
-        
-    } else {
-        _collectionView.scrollEnabled = NO;
-    }
+
+- (void)pageCateButtonView:(PageCateButtonView *)view didSelectedAtIndex:(NSInteger)index {
+    self.triggerScrollTarget = view;
+    [self scrollToIndex:index];
 }
 
+////////////////////////////////////////////////////////////////////////
+#pragma mark -
+////////////////////////////////////////////////////////////////////////
+- (void)setScrollEnabled:(BOOL)scrollEnabled {
+    self.collectionView.scrollEnabled = scrollEnabled;
+}
+
+
+@end
+
+@implementation PageContainerViewFlowLayout
+
+- (void)prepareLayout {
+    [super prepareLayout];
+    
+    self.itemSize = self.collectionView.frame.size;
+    self.minimumLineSpacing = 0;
+    self.minimumInteritemSpacing = 0;
+    self.scrollDirection = UICollectionViewScrollDirectionHorizontal;
+    
+}
+
+@end
+
+@implementation PageContainerViewCell
+
+
+
+- (void)setChannelView:(UIView *)channelView {
+    NSParameterAssert(channelView);
+    if (_channelView == channelView) {
+        return;
+    }
+    [self.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    [self.contentView addSubview:channelView];
+    _channelView = channelView;
+    
+    
+    [_channelView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.contentView);
+    }];
+}
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    if (self = [super initWithFrame:frame]) {
+        self.channelView.hidden = NO;
+    }
+    
+    return self;
+}
+
+
+- (void)dealloc {
+    
+    NSLog(@"%s", __func__);
+}
 
 @end
