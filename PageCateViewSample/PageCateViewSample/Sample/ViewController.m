@@ -46,7 +46,7 @@
 
 
 - (void)pageContainerView:(PageContainerView *)pageContentView didScrollWithProgress:(CGFloat)progress fromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex {
-    [self.pageTitleView setPageTitleViewWithProgress:progress formIndex:fromIndex toIndex:toIndex];
+    
 }
 
 - (UIView *)pageCateChannelViewForContainerView:(PageContainerView *)containerView forIndex:(NSInteger)index {

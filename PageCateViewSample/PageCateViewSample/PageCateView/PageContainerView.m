@@ -181,9 +181,14 @@
             fromIndex = self.totalChanelCount - 1;
         }
     }
-    if (self.delegate && [self.delegate respondsToSelector:@selector(pageContainerView:didScrollWithProgress:fromIndex:toIndex:)]) {
-        [self.delegate pageContainerView:self didScrollWithProgress:progress fromIndex:fromIndex toIndex:toIndex];
+    [self __didScrollFromIndex:fromIndex toIndex:toIndex progress:progress];
+}
+
+- (void)__didScrollFromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(pageContainerView:didScrollFromIndex:toIndex:progress:)]) {
+        [self.delegate pageContainerView:self didScrollFromIndex:fromIndex toIndex:toIndex progress:progress];
     }
+    [self.cateButtonView scrollButtonFormIndex:fromIndex toIndex:toIndex progress:progress];
 }
 
 - (NSInteger)totalChanelCount {
@@ -213,6 +218,9 @@
     self.collectionView.scrollEnabled = scrollEnabled;
 }
 
+- (void)reloadData {
+    [self.collectionView reloadData];
+}
 
 @end
 

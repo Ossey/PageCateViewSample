@@ -18,7 +18,7 @@
 
 @optional
 - (UIView *)pageCateChannelViewForContainerView:(PageContainerView *)containerView forIndex:(NSInteger)index;
-- (void)pageContainerView:(PageContainerView *)pageContentView didScrollWithProgress:(CGFloat)progress fromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex;
+- (void)pageContainerView:(PageContainerView *)pageContentView didScrollFromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress;
 - (void)pageCateButtonView:(PageCateButtonView *)view didSelectedAtIndex:(NSInteger)index;
 
 @end
@@ -33,5 +33,7 @@
 @property (nonatomic, assign) BOOL scrollEnabled;
 
 - (void)scrollToIndex:(NSInteger)toIndex;
+
+- (void)reloadData;
 
 @end

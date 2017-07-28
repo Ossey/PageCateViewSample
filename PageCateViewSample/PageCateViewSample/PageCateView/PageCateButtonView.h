@@ -64,7 +64,7 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 
 - (void)setButtonItemTitle:(NSString *)title index:(NSInteger)index;
 
-- (void)setPageTitleViewWithProgress:(CGFloat)progress formIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex;
+- (void)scrollButtonFormIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress;
 
 @end
 
