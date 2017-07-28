@@ -61,10 +61,6 @@ underLineImage = _underLineImage,
 underLineBackgroundColor = _underLineBackgroundColor,
 selectedIndex = _selectedIndex;
 
-- (instancetype)initWithFrame:(CGRect)frame {
-    return [self initWithFrame:frame delegate:nil cateItems:nil rightItem:nil];
-}
-
 - (instancetype)initWithFrame:(CGRect)frame cateItems:(NSArray<PageCateButtonItem *> *)cateItems rightItem:(PageCateButtonItem *)rightItem {
     
     return [self initWithFrame:frame delegate:nil cateItems:cateItems rightItem:rightItem];
@@ -72,24 +68,48 @@ selectedIndex = _selectedIndex;
 
 - (instancetype)initWithFrame:(CGRect)frame delegate:(id<PageCateButtonViewDelegate>)delegate cateItems:(NSArray<PageCateButtonItem *> *)cateItems rightItem:(PageCateButtonItem *)rightItem {
     
-    if (self = [super initWithFrame:frame]) {
+    if (self = [self initWithFrame:frame]) {
         
-        [self addSubview:self.cateTitleView];
-        [self.cateTitleView addSubview:self.cateTitleContentView];
         _delegate = delegate;
         _rightItem = rightItem;
-        _buttonMargin = 10;
-        _underLineHeight = 1.0;
-        _separatorHeight = 1.0;
-        _automaticCenter = YES;
-        _underLineBackgroundColor = [UIColor redColor];
-        _separatorBackgroundColor = [UIColor blueColor];
         _cateItems = cateItems;
-        _fristAppearUnderLine = YES;
-        _underLineStyle = PageCateButtonViewUnderLineStyleDefault;
-        _separatorStyle = PageCateButtonViewSeparatorStyleDefault;
+        
     }
     return self;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self __setup];
+    }
+    return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+    self = [super initWithCoder:coder];
+    if (self) {
+        [self __setup];
+    }
+    return self;
+}
+
+- (void)__setup {
+    
+    _buttonMargin = 10;
+    _underLineHeight = 1.0;
+    _separatorHeight = 1.0;
+    _automaticCenter = YES;
+    _underLineBackgroundColor = [UIColor redColor];
+    _separatorBackgroundColor = [UIColor blueColor];
+    _fristAppearUnderLine = YES;
+    _underLineStyle = PageCateButtonViewUnderLineStyleDefault;
+    _separatorStyle = PageCateButtonViewSeparatorStyleDefault;
+    [self addSubview:self.cateTitleView];
+    [self.cateTitleView addSubview:self.cateTitleContentView];
+    MASAttachKeys(_cateTitleView, _cateTitleContentView);
 }
 
 - (void)setDelegate:(id<PageCateButtonViewDelegate>)delegate {
@@ -104,7 +124,20 @@ selectedIndex = _selectedIndex;
 }
 
 - (void)setRightItem:(PageCateButtonItem *)rightItem {
+    if (_rightItem.button == rightItem.button) {
+        return;
+    }
     _rightItem = rightItem;
+    
+    if (rightItem) {
+        
+        self.rightItem.index = self.cateItems.count + 1;
+        __weak typeof(self) weakSelf = self;
+        self.rightItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
+            [weakSelf rightButtonItemClick:item];
+        };
+        [self addSubview:self.rightItem.button];
+    }
     
     [self reloadSubviews];
 }
@@ -124,51 +157,41 @@ selectedIndex = _selectedIndex;
     }
 
     self.scrollViewContentWidth = _buttonMargin * (self.cateItems.count + 1) + self.scrollViewContentWidth;
-    if (self.rightItem) {
-        self.scrollViewContentWidth += self.rightItem.contentWidth + _buttonMargin;
-    }
     self.scrollViewContentWidth = ceil(self.scrollViewContentWidth);
     
     if ([self isCanScroll]) {
-        CGFloat bX = 0;
-        CGFloat bY = 0;
-        CGFloat bH = self.frame.size.height - self.separatorHeight;
         for (NSInteger i = 0; i < self.cateItems.count; i++) {
             PageCateButtonItem *buttonItem = self.cateItems[i];
-            CGFloat bW = buttonItem.contentWidth+self.buttonMargin;
-            bX += bW;
-            
             buttonItem.index = i;
             __weak typeof(self) weakSelf = self;
             buttonItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
                 [weakSelf buttonItemClick:item];
             };
             [self.cateTitleContentView addSubview:buttonItem.button];
-//            buttonItem.button.frame = CGRectMake(bX, bY, bW, bH);
             
             if (!_lastButton) {
-                [buttonItem.button mas_makeConstraints:^(MASConstraintMaker *make) {
+                [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
                     make.left.equalTo(self.cateTitleContentView).mas_offset(0);
                     make.top.equalTo(self.cateTitleContentView);
                     make.width.mas_equalTo(buttonItem.contentWidth);
-                    make.height.equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight);
+                    make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
                 }];
             } else {
                 if (i == self.cateItems.count - 1) {
-                    [buttonItem.button mas_makeConstraints:^(MASConstraintMaker *make) {
+                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
                         make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
                         make.top.equalTo(_lastButton);
                         make.right.equalTo(self.cateTitleContentView);
                         make.width.mas_equalTo(buttonItem.contentWidth);
-                        make.height.equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight);
+                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
                     }];
                     
                 } else {
-                    [buttonItem.button mas_makeConstraints:^(MASConstraintMaker *make) {
+                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
                         make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
                         make.top.equalTo(_lastButton);
                         make.width.mas_equalTo(buttonItem.contentWidth);
-                        make.height.equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight);
+                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
                     }];
                     
                 }
@@ -176,29 +199,11 @@ selectedIndex = _selectedIndex;
             }
 
             _lastButton = buttonItem.button;
+            MASAttachKeys(buttonItem.button);
         }
-        if (self.rightItem) {
-            CGFloat bW = self.rightItem.contentWidth+self.buttonMargin;
-            bX += bW;
-            self.rightItem.button.frame = CGRectMake(bX, bY, bW, bH);
-            self.rightItem.index = self.cateItems.count + 1;
-            __weak typeof(self) weakSelf = self;
-            self.rightItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
-                [weakSelf rightButtonItemClick:item];
-            };
-            [self addSubview:self.rightItem.button];
-            
-        }
-//        CGFloat scrollViewWidth = self.rightItem ? CGRectGetMaxX(self.rightItem.button.frame) : CGRectGetMaxX(self.cateItems.lastObject.button.frame);
-//        self.cateTitleView.contentSize = CGSizeMake(scrollViewWidth, 0);
     } else {
-        CGFloat bY = 0;
-        CGFloat bW = self.bounds.size.width / self.cateItems.count;
-        CGFloat bH = self.bounds.size.height - self.separatorHeight;
-        CGFloat bX = 0;
         
         for (NSInteger i = 0; i < self.cateItems.count; i++) {
-            bX = i * bW;
             PageCateButtonItem *buttonItem = self.cateItems[i];
             buttonItem.index = i;
             __weak typeof(self) weakSelf = self;
@@ -206,7 +211,6 @@ selectedIndex = _selectedIndex;
                 [weakSelf buttonItemClick:item];
             };
             [self.cateTitleContentView addSubview:buttonItem.button];
-//            buttonItem.button.frame = CGRectMake(bX, bY, bW, bH);
             if (!_lastButton) {
                 [buttonItem.button mas_makeConstraints:^(MASConstraintMaker *make) {
                     make.left.equalTo(self.cateTitleContentView).mas_offset(0);
@@ -236,25 +240,14 @@ selectedIndex = _selectedIndex;
                 
             }
             _lastButton = buttonItem.button;
+            MASAttachKeys(buttonItem.button);
         }
 
-        if (self.rightItem) {
-            CGFloat bW = self.rightItem.contentWidth+self.buttonMargin;
-            bX += bW;
-            self.rightItem.button.frame = CGRectMake(bX, bY, bW, bH);
-            self.rightItem.index = self.cateItems.count + 1;
-            __weak typeof(self) weakSelf = self;
-            self.rightItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
-                [weakSelf rightButtonItemClick:item];
-            };
-            [self addSubview:self.rightItem.button];
-        }
-//        self.cateTitleView.contentSize = CGSizeMake(self.bounds.size.width, 0);
     }
     _lastButton = nil;
-    [self setSelectedIndex:self.selectedIndex];
     [self setUnderLineStyle:_underLineStyle];
     [self setSeparatorStyle:_separatorStyle];
+    [self setSelectedIndex:self.selectedIndex];
     
 }
 
@@ -601,31 +594,32 @@ selectedIndex = _selectedIndex;
 - (void)layoutSubviews {
     [super layoutSubviews];
     if (!self.rightItem.button) {
-        [self.cateTitleView mas_makeConstraints:^(MASConstraintMaker *make) {
+        [self.cateTitleView mas_remakeConstraints:^(MASConstraintMaker *make) {
             make.edges.equalTo(self);
         }];
     } else {
-        [self.cateTitleView mas_makeConstraints:^(MASConstraintMaker *make) {
+        [self.cateTitleView mas_remakeConstraints:^(MASConstraintMaker *make) {
             make.top.bottom.left.equalTo(self);
-            make.right.mas_lessThanOrEqualTo(self.rightItem.button.mas_left);
+            make.right.mas_equalTo(self.rightItem.button.mas_left);
         }];
-        [self.rightItem.button mas_makeConstraints:^(MASConstraintMaker *make) {
+        // 消除约束的警告：把其中一个关于superview的约束等级修改为High，就可以了；既消除了警告，也不影响视图的现实
+        [self.rightItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
             make.width.mas_equalTo(self.rightItem.contentWidth);
-            make.height.equalTo(self);
-            make.right.equalTo(self);
+            make.top.bottom.right.equalTo(self).priorityHigh();
         }];
     }
-    [self.cateTitleContentView mas_makeConstraints:^(MASConstraintMaker *make) {
+    [self.cateTitleContentView mas_updateConstraints:^(MASConstraintMaker *make) {
         make.edges.equalTo(self.cateTitleView);
         make.height.equalTo(self.cateTitleView);
     }];
     
     if (self.separatorStyle != PageCateButtonViewSeparatorStyleNone && _separatorView.superview) {
-        [self.separatorView mas_makeConstraints:^(MASConstraintMaker *make) {
+        [self.separatorView mas_updateConstraints:^(MASConstraintMaker *make) {
             make.bottom.left.right.equalTo(self);
             make.height.mas_equalTo(_separatorHeight);
         }];
     }
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -648,6 +642,7 @@ selectedIndex = _selectedIndex;
     if (!_underLineView) {
         _underLineView = [[DefaultUnderLineView alloc] init];
         _underLineView.backgroundColor = [UIColor redColor];
+        MASAttachKeys(_underLineView);
     }
     return _underLineView;
 }
@@ -666,13 +661,7 @@ selectedIndex = _selectedIndex;
         separatorView.image = self.separatorImage;
         separatorView.backgroundColor = self.separatorBackgroundColor;
         _separatorView = separatorView;
-//        CGRect frame = _separatorView.frame;
-//        frame.origin.y = CGRectGetHeight(self.cateTitleView.frame);
-//        frame.size.height = _separatorHeight;
-//        frame.size.width = CGRectGetWidth(self.frame);
-//        frame.origin.x = 0;
-//        _separatorView.frame = frame;
-        
+        MASAttachKeys(_separatorView);
     }
     return _separatorView;
 }
@@ -680,6 +669,9 @@ selectedIndex = _selectedIndex;
 
 
 - (BOOL)isCanScroll {
+    if (self.rightItem.button) {
+        return self.scrollViewContentWidth > self.bounds.size.width - self.rightItem.contentWidth;
+    }
     return self.scrollViewContentWidth > self.bounds.size.width;
 }
 
@@ -745,11 +737,11 @@ selectedIndex = _selectedIndex;
         _contentWidth = [self.title sizeWithMaxSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:self.textFont].width;
         /// 只有文字， 没有图片时
         if (currentText.length && !currentImage) {
-            return _contentWidth;
+            return _contentWidth += 10;
         }
         /// 没有文字， 只有图片时
         if (!currentText.length && currentImage != nil) {
-            return currentImage.size.width;
+            return _contentWidth += currentImage.size.width;
             
         }
         

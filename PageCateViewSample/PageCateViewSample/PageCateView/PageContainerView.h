@@ -25,9 +25,10 @@
 
 @interface PageContainerView : UIView
 
-- (instancetype)initWithFrame:(CGRect)frame parentViewController:(UIViewController *)parentViewController childViewControllers:(NSArray *)childViewControllers;
+- (instancetype)initWithFrame:(CGRect)frame;
 
-- (instancetype)initWithFrame:(CGRect)frame delegate:(id<PageContainerViewDelegate>)delegate;
+@property (nonatomic, weak) UIViewController *rootViewController;
+@property (nonatomic, strong) NSArray<UIViewController *> *childViewControllers;
 
 @property (nonatomic, weak) id<PageContainerViewDelegate> delegate;
 @property (nonatomic, assign) BOOL scrollEnabled;

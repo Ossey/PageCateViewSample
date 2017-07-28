@@ -21,8 +21,6 @@
 
 @interface PageContainerView () <UICollectionViewDelegate, UICollectionViewDataSource, PageCateButtonViewDelegate>
 
-@property (nonatomic, weak) UIViewController *parentViewController;
-@property (nonatomic, strong) NSArray *childViewControllers;
 @property (nonatomic, strong) UICollectionView *collectionView;
 @property (nonatomic, assign) CGPoint startScrollOffset;
 @property (nonatomic, strong) PageCateButtonView *cateButtonView;
@@ -37,30 +35,66 @@
 
 @implementation PageContainerView
 
-- (instancetype)initWithFrame:(CGRect)frame parentViewController:(UIViewController *)parentViewController childViewControllers:(NSArray *)childViewControllers {
-    if (self = [super initWithFrame:frame]) {
-        self.parentViewController = parentViewController;
-        self.childViewControllers = childViewControllers;
-        for (UIViewController *vc in self.childViewControllers) {
-            [self.parentViewController addChildViewController:vc];
-        }
+@synthesize rootViewController = _rootViewController;
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
         [self __setup];
     }
     return self;
 }
 
-- (instancetype)initWithFrame:(CGRect)frame delegate:(id<PageContainerViewDelegate>)delegate {
-    if (self = [super initWithFrame:frame]) {
-        self.delegate = delegate;
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+    self = [super initWithCoder:coder];
+    if (self) {
         [self __setup];
     }
     return self;
+}
+
+
+- (void)setRootViewController:(UIViewController *)rootViewController {
+    if (_rootViewController != rootViewController) {
+        return;
+    }
+    _rootViewController = rootViewController;
+    [self reloadData];
+    
+}
+
+- (void)setChildViewControllers:(NSArray<UIViewController *> *)childViewControllers {
+    _childViewControllers = childViewControllers;
+    
+    NSArray *tempArray = [self.rootViewController.childViewControllers mutableCopy];
+    [tempArray enumerateObjectsUsingBlock:^(__kindof UIViewController * _Nonnull vc, NSUInteger idx, BOOL * _Nonnull stop) {
+        [vc willMoveToParentViewController:nil];
+        [vc.view removeFromSuperview];
+        [vc removeFromParentViewController];
+    }];
+    tempArray = nil;
+    
+    for (UIViewController *vc in childViewControllers) {
+        [self.rootViewController addChildViewController:vc];
+    }
+    
+    [self reloadData];
+}
+
+
+- (UIViewController *)rootViewController {
+    if (!_rootViewController) {
+        _rootViewController = [self getCurrentViewController];
+    }
+    return _rootViewController;
 }
 
 - (UICollectionView *)collectionView {
     if (!_collectionView) {
         _flowLayout = [PageContainerViewFlowLayout new];
-        _collectionView = [[UICollectionView alloc] initWithFrame:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) collectionViewLayout:_flowLayout];
+        _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_flowLayout];
         _collectionView.showsHorizontalScrollIndicator = NO;
         _collectionView.pagingEnabled = YES;
         _collectionView.bounces = NO;
@@ -74,8 +108,16 @@
 
 - (void)__setup {
     self.startScrollOffset = CGPointZero;
-    
     [self addSubview:self.collectionView];
+    
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    
+    [_collectionView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self);
+    }];
 }
 
 - (void)setDelegate:(id<PageContainerViewDelegate>)delegate {
@@ -88,7 +130,7 @@
     self.cateButtonView.delegate = self;
 }
 
--(UIViewController *)getCurrentViewController {
+- (UIViewController *)getCurrentViewController {
     UIResponder *next = [self nextResponder];
     do {
         if ([next isKindOfClass:[UIViewController class]]) {
@@ -104,10 +146,6 @@
     [self.collectionView reloadData];
 }
 
-- (void)setChildViewControllers:(NSArray *)childViewControllers {
-    _childViewControllers = childViewControllers;
-    [self.collectionView reloadData];
-}
 
 ////////////////////////////////////////////////////////////////////////
 #pragma mark - UICollectionViewDataSource
@@ -198,8 +236,9 @@
     return self.childViewControllers.count;
 }
 - (void)scrollToIndex:(NSInteger)toIndex {
-    CGFloat offsetX = toIndex * self.collectionView.frame.size.width;
-    self.collectionView.contentOffset = CGPointMake(offsetX, 0);
+    [self layoutIfNeeded];
+    CGFloat offsetX = toIndex * MAX(self.collectionView.frame.size.width, [UIScreen mainScreen].bounds.size.width);
+    [self.collectionView setContentOffset:CGPointMake(offsetX, 0) animated:NO];
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -229,7 +268,7 @@
 - (void)prepareLayout {
     [super prepareLayout];
     
-    self.itemSize = self.collectionView.frame.size;
+    self.itemSize = self.collectionView.frame.size.width ? self.collectionView.frame.size : CGSizeMake([UIScreen mainScreen].bounds.size.width, self.collectionView.frame.size.height);
     self.minimumLineSpacing = 0;
     self.minimumInteritemSpacing = 0;
     self.scrollDirection = UICollectionViewScrollDirectionHorizontal;
@@ -247,14 +286,15 @@
     if (_channelView == channelView) {
         return;
     }
-    [self.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
-    [self.contentView addSubview:channelView];
     _channelView = channelView;
+    [self.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    if (_channelView) {
+        [self.contentView addSubview:channelView];
+        [_channelView mas_updateConstraints:^(MASConstraintMaker *make) {
+            make.edges.equalTo(self.contentView);
+        }];
+    }
     
-    
-    [_channelView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.edges.equalTo(self.contentView);
-    }];
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
