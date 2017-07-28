@@ -24,8 +24,13 @@
     // Do any additional setup after loading the view, typically from a nib.
     self.automaticallyAdjustsScrollViewInsets = NO;
     [self setupPageView];
+    
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"test" style:UIBarButtonItemStylePlain target:self action:@selector(testAction)];
 }
 
+- (void)testAction {
+    [_cateButtonView setSizeToFltWhenScreenNotPaved:!_cateButtonView.sizeToFltWhenScreenNotPaved];
+}
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
@@ -55,7 +60,7 @@
         Sample1TableViewController *vc = [[Sample1TableViewController alloc] init];
         [vcs addObject:vc];
         i++;
-    } while (i < 14);
+    } while (i < 3);
     self.pageContentView.childViewControllers = vcs;
     
     self.cateButtonView.selectedIndex = 1;
@@ -84,7 +89,7 @@
             buttonItem.imageName = [NSString stringWithFormat:@"trip_sharing_%ld_publish_selected", i+1];
             [buttonItems addObject:buttonItem];
             i++;
-        } while (i < 14);
+        } while (i < 3);
         _cateButtonView = [[PageCateButtonView alloc] init];
         [self.view addSubview:_cateButtonView];
         _cateButtonView.cateItems = buttonItems;

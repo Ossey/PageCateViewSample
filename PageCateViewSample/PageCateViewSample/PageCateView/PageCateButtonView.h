@@ -48,6 +48,8 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 @property (nonatomic, assign) NSInteger selectedIndex;
 @property (nonatomic, assign) BOOL bounces;
 @property (nonatomic, assign) BOOL underLineCanScroll;
+/** 当buttonItem总共未占满一屏幕时，是否自适应buttonItem的宽度，让其铺满屏幕 */
+@property (nonatomic, assign) BOOL sizeToFltWhenScreenNotPaved;
 
 /** 标题按钮缩放比例, 默认为0, 有效范围0.0~1.0 */
 @property (nonatomic, assign) CGFloat itemTitleScale;
