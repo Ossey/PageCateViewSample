@@ -688,7 +688,7 @@ selectedIndex = _selectedIndex;
         _button.titleLabel.font = self.textFont;
         _button.imageView.contentMode = UIViewContentModeScaleAspectFit;
         _button.contentMode = UIViewContentModeScaleAspectFit;
-//        [_button setTitleColor:[UIColor blackColor] forState:(UIControlStateNormal)];
+        [_button setTitleColor:[UIColor blackColor] forState:(UIControlStateNormal)];
 //        [_button setTitleColor:[UIColor redColor] forState:(UIControlStateSelected)];
         [_button addTarget:self action:@selector(buttonClick:) forControlEvents:UIControlEventTouchUpInside];
         PageCateButton *btn = (PageCateButton *)_button;
@@ -813,150 +813,169 @@ selectedIndex = _selectedIndex;
 @end
 
 
-@implementation PageCateButton
+@implementation PageCateButton {
+    CGSize _titleLabelSize;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.titleLabel.textAlignment = NSTextAlignmentCenter;
+    }
+    return self;
+}
 
 
 // 图片太大，文本显示不出来，控制button中image的尺寸
-- (CGRect)imageRectForContentRect:(CGRect)bounds{
-    return CGRectMake(0.0, 0.0, self.bounds.size.width, self.bounds.size.height-20);
+// @note:imageRectForContentRect:和titleRectForContentRect:不能互相调用imageView和titleLael,不然会死循环
+- (CGRect)imageRectForContentRect:(CGRect)bounds {
+    if (CGSizeEqualToSize(_titleLabelSize, CGSizeZero)) {
+        return CGRectMake(0.0, 0.0, self.bounds.size.width, self.bounds.size.height);
+    }
+    return CGRectMake(0.0, 0.0, self.bounds.size.width, self.bounds.size.height-_titleLabelSize.height);
 }
 
-- (void)layoutSubviews {
-    [super layoutSubviews];
+- (CGRect)titleRectForContentRect:(CGRect)contentRect {
+    if (self.imageView.image) {
+            return CGRectMake(0.0, self.imageView.bounds.size.height, self.bounds.size.width, self.bounds.size.height-self.imageView.bounds.size.height);
+    }
+    return CGRectMake(0.0, 0.0, self.bounds.size.width, self.bounds.size.height);
 
 }
 
-- (void)setFrame:(CGRect)frame {
-    [super setFrame:frame];
-    self.edgeInsetsStyle = _edgeInsetsStyle;
-}
+//- (void)setFrame:(CGRect)frame {
+//    [super setFrame:frame];
+////    self.edgeInsetsStyle = _edgeInsetsStyle;
+//}
 
-- (void)setImage:(UIImage *)image forState:(UIControlState)state {
-    [super setImage:image forState:state];
-    [self setEdgeInsetsStyle:_edgeInsetsStyle];
-}
+//- (void)setImage:(UIImage *)image forState:(UIControlState)state {
+//    [super setImage:image forState:state];
+////    [self setEdgeInsetsStyle:_edgeInsetsStyle];
+//}
 
 - (void)setTitle:(NSString *)title forState:(UIControlState)state {
     [super setTitle:title forState:state];
-    [self setEdgeInsetsStyle:_edgeInsetsStyle];
+    _titleLabelSize = [title sizeWithMaxSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:self.titleLabel.font];
+//    [self setEdgeInsetsStyle:_edgeInsetsStyle];
 }
 
-- (void)setEdgeInsetsStyle:(PageCateButtonEdgeInsetsStyle)edgeInsetsStyle {
-    
-    [self setTitleEdgeInsets:UIEdgeInsetsZero];
-    [self setImageEdgeInsets:UIEdgeInsetsZero];
-    
-    [self layoutIfNeeded];
-    
-    _edgeInsetsStyle = edgeInsetsStyle;
-    CGFloat space = self.imageTitleSpace;
-    CGFloat imageViewWidth = CGRectGetWidth(self.imageView.frame);
-    CGFloat labelWidth = CGRectGetWidth(self.titleLabel.frame);
-    
-    if (labelWidth == 0) {
-        CGSize titleSize = [self.titleLabel.text sizeWithAttributes:@{NSFontAttributeName:self.titleLabel.font}];
-        labelWidth  = titleSize.width;
-    }
-    
-    CGFloat imageInsetsTop = 0.0f;
-    CGFloat imageInsetsLeft = 0.0f;
-    CGFloat imageInsetsBottom = 0.0f;
-    CGFloat imageInsetsRight = 0.0f;
-    
-    CGFloat titleInsetsTop = 0.0f;
-    CGFloat titleInsetsLeft = 0.0f;
-    CGFloat titleInsetsBottom = 0.0f;
-    CGFloat titleInsetsRight = 0.0f;
-    
-    switch (edgeInsetsStyle) {
-        case PageCateButtonEdgeInsetsStyleImageRight:
-        {
-            space = space * 0.5;
-            
-            imageInsetsLeft = labelWidth + space;
-            imageInsetsRight = -imageInsetsLeft;
-            
-            titleInsetsLeft = - (imageViewWidth + space);
-            titleInsetsRight = -titleInsetsLeft;
-        }
-            break;
-            
-        case PageCateButtonEdgeInsetsStyleImageLeft:
-        {
-            space = space * 0.5;
-            
-            imageInsetsLeft = -space;
-            imageInsetsRight = -imageInsetsLeft;
-            
-            titleInsetsLeft = space;
-            titleInsetsRight = -titleInsetsLeft;
-        }
-            break;
-        case PageCateButtonEdgeInsetsStyleImageBottom:
-        {
-            CGFloat imageHeight = CGRectGetHeight(self.imageView.frame);
-            CGFloat labelHeight = CGRectGetHeight(self.titleLabel.frame);
-            CGFloat buttonHeight = CGRectGetHeight(self.frame);
-            CGFloat boundsCentery = (imageHeight + space + labelHeight) * 0.5;
-            
-            CGFloat centerX_button = CGRectGetMidX(self.bounds); // bounds
-            CGFloat centerX_titleLabel = CGRectGetMidX(self.titleLabel.frame);
-            CGFloat centerX_image = CGRectGetMidX(self.imageView.frame);
-            
-            CGFloat imageBottomY = CGRectGetMaxY(self.imageView.frame);
-            CGFloat titleTopY = CGRectGetMinY(self.titleLabel.frame);
-            
-            imageInsetsTop = buttonHeight - (buttonHeight * 0.5 - boundsCentery) - imageBottomY;
-            imageInsetsLeft = centerX_button - centerX_image;
-            imageInsetsRight = - imageInsetsLeft;
-            imageInsetsBottom = - imageInsetsTop;
-            
-            titleInsetsTop = (buttonHeight * 0.5 - boundsCentery) - titleTopY;
-            titleInsetsLeft = -(centerX_titleLabel - centerX_button);
-            titleInsetsRight = - titleInsetsLeft;
-            titleInsetsBottom = - titleInsetsTop;
-            
-        }
-            break;
-        case PageCateButtonEdgeInsetsStyleImageTop:
-        {
-            CGFloat imageHeight = CGRectGetHeight(self.imageView.frame);
-            CGFloat labelHeight = CGRectGetHeight(self.titleLabel.frame);
-            CGFloat buttonHeight = CGRectGetHeight(self.frame);
-            CGFloat boundsCentery = (imageHeight + space + labelHeight) * 0.5;
-            
-            CGFloat centerX_button = CGRectGetMidX(self.bounds); // bounds
-            CGFloat centerX_titleLabel = CGRectGetMidX(self.titleLabel.frame);
-            CGFloat centerX_image = CGRectGetMidX(self.imageView.frame);
-            
-            CGFloat imageTopY = CGRectGetMinY(self.imageView.frame);
-            CGFloat titleBottom = CGRectGetMaxY(self.titleLabel.frame);
-            
-            imageInsetsTop = (buttonHeight * 0.5 - boundsCentery) - imageTopY;
-            imageInsetsLeft = centerX_button - centerX_image;
-            imageInsetsRight = - imageInsetsLeft;
-            imageInsetsBottom = - imageInsetsTop;
-            
-            titleInsetsTop = buttonHeight - (buttonHeight * 0.5 - boundsCentery) - titleBottom;
-            titleInsetsLeft = -(centerX_titleLabel - centerX_button);
-            titleInsetsRight = - titleInsetsLeft;
-            titleInsetsBottom = - titleInsetsTop;
-        }
-            break;
-            
-        default:
-            break;
-    }
-    
-    self.imageEdgeInsets = UIEdgeInsetsMake(imageInsetsTop, imageInsetsLeft, imageInsetsBottom, imageInsetsRight);
-    self.titleEdgeInsets = UIEdgeInsetsMake(titleInsetsTop, titleInsetsLeft, titleInsetsBottom, titleInsetsRight);
-}
-
-- (void)setImageTitleSpace:(CGFloat)imageTitleSpace {
-    _imageTitleSpace = imageTitleSpace;
-    
-    [self setEdgeInsetsStyle:_edgeInsetsStyle];
-}
+//- (void)setEdgeInsetsStyle:(PageCateButtonEdgeInsetsStyle)edgeInsetsStyle {
+//    
+//    [self setTitleEdgeInsets:UIEdgeInsetsZero];
+//    [self setImageEdgeInsets:UIEdgeInsetsZero];
+//    
+//    [self layoutIfNeeded];
+//    
+//    _edgeInsetsStyle = edgeInsetsStyle;
+//    CGFloat space = self.imageTitleSpace;
+//    CGFloat imageViewWidth = CGRectGetWidth(self.imageView.frame);
+//    CGFloat labelWidth = CGRectGetWidth(self.titleLabel.frame);
+//    
+//    if (labelWidth == 0) {
+//        CGSize titleSize = [self.titleLabel.text sizeWithAttributes:@{NSFontAttributeName:self.titleLabel.font}];
+//        labelWidth  = titleSize.width;
+//    }
+//    
+//    CGFloat imageInsetsTop = 0.0f;
+//    CGFloat imageInsetsLeft = 0.0f;
+//    CGFloat imageInsetsBottom = 0.0f;
+//    CGFloat imageInsetsRight = 0.0f;
+//    
+//    CGFloat titleInsetsTop = 0.0f;
+//    CGFloat titleInsetsLeft = 0.0f;
+//    CGFloat titleInsetsBottom = 0.0f;
+//    CGFloat titleInsetsRight = 0.0f;
+//    
+//    switch (edgeInsetsStyle) {
+//        case PageCateButtonEdgeInsetsStyleImageRight:
+//        {
+//            space = space * 0.5;
+//            
+//            imageInsetsLeft = labelWidth + space;
+//            imageInsetsRight = -imageInsetsLeft;
+//            
+//            titleInsetsLeft = - (imageViewWidth + space);
+//            titleInsetsRight = -titleInsetsLeft;
+//        }
+//            break;
+//            
+//        case PageCateButtonEdgeInsetsStyleImageLeft:
+//        {
+//            space = space * 0.5;
+//            
+//            imageInsetsLeft = -space;
+//            imageInsetsRight = -imageInsetsLeft;
+//            
+//            titleInsetsLeft = space;
+//            titleInsetsRight = -titleInsetsLeft;
+//        }
+//            break;
+//        case PageCateButtonEdgeInsetsStyleImageBottom:
+//        {
+//            CGFloat imageHeight = CGRectGetHeight(self.imageView.frame);
+//            CGFloat labelHeight = CGRectGetHeight(self.titleLabel.frame);
+//            CGFloat buttonHeight = CGRectGetHeight(self.frame);
+//            CGFloat boundsCentery = (imageHeight + space + labelHeight) * 0.5;
+//            
+//            CGFloat centerX_button = CGRectGetMidX(self.bounds); // bounds
+//            CGFloat centerX_titleLabel = CGRectGetMidX(self.titleLabel.frame);
+//            CGFloat centerX_image = CGRectGetMidX(self.imageView.frame);
+//            
+//            CGFloat imageBottomY = CGRectGetMaxY(self.imageView.frame);
+//            CGFloat titleTopY = CGRectGetMinY(self.titleLabel.frame);
+//            
+//            imageInsetsTop = buttonHeight - (buttonHeight * 0.5 - boundsCentery) - imageBottomY;
+//            imageInsetsLeft = centerX_button - centerX_image;
+//            imageInsetsRight = - imageInsetsLeft;
+//            imageInsetsBottom = - imageInsetsTop;
+//            
+//            titleInsetsTop = (buttonHeight * 0.5 - boundsCentery) - titleTopY;
+//            titleInsetsLeft = -(centerX_titleLabel - centerX_button);
+//            titleInsetsRight = - titleInsetsLeft;
+//            titleInsetsBottom = - titleInsetsTop;
+//            
+//        }
+//            break;
+//        case PageCateButtonEdgeInsetsStyleImageTop:
+//        {
+//            CGFloat imageHeight = CGRectGetHeight(self.imageView.frame);
+//            CGFloat labelHeight = CGRectGetHeight(self.titleLabel.frame);
+//            CGFloat buttonHeight = CGRectGetHeight(self.frame);
+//            CGFloat boundsCentery = (imageHeight + space + labelHeight) * 0.5;
+//            
+//            CGFloat centerX_button = CGRectGetMidX(self.bounds); // bounds
+//            CGFloat centerX_titleLabel = CGRectGetMidX(self.titleLabel.frame);
+//            CGFloat centerX_image = CGRectGetMidX(self.imageView.frame);
+//            
+//            CGFloat imageTopY = CGRectGetMinY(self.imageView.frame);
+//            CGFloat titleBottom = CGRectGetMaxY(self.titleLabel.frame);
+//            
+//            imageInsetsTop = (buttonHeight * 0.5 - boundsCentery) - imageTopY;
+//            imageInsetsLeft = centerX_button - centerX_image;
+//            imageInsetsRight = - imageInsetsLeft;
+//            imageInsetsBottom = - imageInsetsTop;
+//            
+//            titleInsetsTop = buttonHeight - (buttonHeight * 0.5 - boundsCentery) - titleBottom;
+//            titleInsetsLeft = -(centerX_titleLabel - centerX_button);
+//            titleInsetsRight = - titleInsetsLeft;
+//            titleInsetsBottom = - titleInsetsTop;
+//        }
+//            break;
+//            
+//        default:
+//            break;
+//    }
+//    
+//    self.imageEdgeInsets = UIEdgeInsetsMake(imageInsetsTop, imageInsetsLeft, imageInsetsBottom, imageInsetsRight);
+//    self.titleEdgeInsets = UIEdgeInsetsMake(titleInsetsTop, titleInsetsLeft, titleInsetsBottom, titleInsetsRight);
+//}
+//
+//- (void)setImageTitleSpace:(CGFloat)imageTitleSpace {
+//    _imageTitleSpace = imageTitleSpace;
+//    
+//    [self setEdgeInsetsStyle:_edgeInsetsStyle];
+//}
 
 
 
