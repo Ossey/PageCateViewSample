@@ -32,7 +32,7 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 @interface PageCateButtonView : UIView
 
 @property (nonatomic, weak) id<PageCateButtonViewDelegate> delegate;
-@property (nonatomic, strong) NSArray<PageCateButtonItem *> *cateItems;
+@property (nonatomic, strong) NSArray<PageCateButtonItem *> *buttonItems;
 @property (nonatomic, strong) PageCateButtonItem *rightItem;
 @property (nonatomic, assign) CGFloat buttonMargin;
 @property (nonatomic, assign) UIColor *currentItemBackGroundColor;
@@ -58,10 +58,10 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 
 - (instancetype)initWithFrame:(CGRect)frame
                      delegate:(id<PageCateButtonViewDelegate>)delegate
-                    cateItems:(NSArray<PageCateButtonItem *> *)cateItems
-              rightItem:(PageCateButtonItem *)rightItem;
+                  buttonItems:(NSArray<PageCateButtonItem *> *)buttonItems
+                    rightItem:(PageCateButtonItem *)rightItem;
 - (instancetype)initWithFrame:(CGRect)frame
-                    cateItems:(NSArray<PageCateButtonItem *> *)cateItems
+                  buttonItems:(NSArray<PageCateButtonItem *> *)buttonItems
                     rightItem:(PageCateButtonItem *)rightItem;
 
 - (void)setButtonItemTitle:(NSString *)title index:(NSInteger)index;

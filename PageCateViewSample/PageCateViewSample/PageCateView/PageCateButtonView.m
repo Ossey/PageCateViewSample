@@ -41,16 +41,12 @@ typedef NS_ENUM(NSUInteger, PageCateButtonEdgeInsetsStyle) {
 @property (nonatomic, strong) UIView *cateTitleContentView;
 /** 根据所有button 和 间距 计算到的总宽度 */
 @property (nonatomic, assign) CGFloat scrollViewContentWidth;
-/** 底部分割线 */
 @property (nonatomic, strong) UIImageView *separatorView;
-/** 下划线 */
 @property (nonatomic, strong) DefaultUnderLineView *underLineView;
-/** 上次选中的按钮 */
 @property (nonatomic, weak) PageCateButtonItem *previousSelectedBtnItem;
-
 @property (nonatomic, assign) BOOL fristAppearUnderLine;
-
 @property (nonatomic, weak) UIView *lastButton;
+@property (nonatomic, assign) CGFloat sizeToFltWidth;
 
 @end
 
@@ -61,18 +57,18 @@ underLineImage = _underLineImage,
 underLineBackgroundColor = _underLineBackgroundColor,
 selectedIndex = _selectedIndex;
 
-- (instancetype)initWithFrame:(CGRect)frame cateItems:(NSArray<PageCateButtonItem *> *)cateItems rightItem:(PageCateButtonItem *)rightItem {
+- (instancetype)initWithFrame:(CGRect)frame buttonItems:(NSArray<PageCateButtonItem *> *)buttonItems rightItem:(PageCateButtonItem *)rightItem {
     
-    return [self initWithFrame:frame delegate:nil cateItems:cateItems rightItem:rightItem];
+    return [self initWithFrame:frame delegate:nil buttonItems:buttonItems rightItem:rightItem];
 }
 
-- (instancetype)initWithFrame:(CGRect)frame delegate:(id<PageCateButtonViewDelegate>)delegate cateItems:(NSArray<PageCateButtonItem *> *)cateItems rightItem:(PageCateButtonItem *)rightItem {
+- (instancetype)initWithFrame:(CGRect)frame delegate:(id<PageCateButtonViewDelegate>)delegate buttonItems:(NSArray<PageCateButtonItem *> *)buttonItems rightItem:(PageCateButtonItem *)rightItem {
     
     if (self = [self initWithFrame:frame]) {
         
         _delegate = delegate;
         _rightItem = rightItem;
-        _cateItems = cateItems;
+        _buttonItems = buttonItems;
         
     }
     return self;
@@ -98,7 +94,7 @@ selectedIndex = _selectedIndex;
 
 - (void)__setup {
     
-    _buttonMargin = 10;
+    _buttonMargin = 0.0;
     _underLineHeight = 1.0;
     _separatorHeight = 1.0;
     _automaticCenter = YES;
@@ -118,8 +114,8 @@ selectedIndex = _selectedIndex;
     [self reloadSubviews];
 }
 
-- (void)setCateItems:(NSArray<PageCateButtonItem *> *)cateItems {
-    _cateItems = cateItems;
+- (void)setButtonItems:(NSArray<PageCateButtonItem *> *)buttonItems {
+    _buttonItems = buttonItems;
     
     [self reloadSubviews];
 }
@@ -141,7 +137,7 @@ selectedIndex = _selectedIndex;
     
     if (rightItem) {
         
-        self.rightItem.index = self.cateItems.count + 1;
+        self.rightItem.index = self.buttonItems.count + 1;
         __weak typeof(self) weakSelf = self;
         self.rightItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
             [weakSelf rightButtonItemClick:item];
@@ -161,16 +157,20 @@ selectedIndex = _selectedIndex;
     _lastButton = nil;
     [self layoutIfNeeded];
     self.scrollViewContentWidth = 0;
-    for (NSInteger i = 0; i < self.cateItems.count; ++i) {
-        PageCateButtonItem *buttonItem = self.cateItems[i];
+    for (NSInteger i = 0; i < self.buttonItems.count; ++i) {
+        PageCateButtonItem *buttonItem = self.buttonItems[i];
         self.scrollViewContentWidth += buttonItem.contentWidth;
     }
     
-    self.scrollViewContentWidth = _buttonMargin * (self.cateItems.count + 1) + self.scrollViewContentWidth;
+    self.scrollViewContentWidth = _buttonMargin * (self.buttonItems.count + 1) + self.scrollViewContentWidth;
     self.scrollViewContentWidth = ceil(self.scrollViewContentWidth);
-    CGFloat sizeToFltWidth = self.cateTitleView.frame.size.width / self.cateItems.count;
-    for (NSInteger i = 0; i < self.cateItems.count; i++) {
-        PageCateButtonItem *buttonItem = self.cateItems[i];
+    if (![self isCanScroll] && self.sizeToFltWhenScreenNotPaved) {
+        _sizeToFltWidth = (self.cateTitleView.frame.size.width - (self.buttonItems.count - 1)*_buttonMargin) / self.buttonItems.count;
+    } else {
+        _sizeToFltWidth = 0;
+    }
+    for (NSInteger i = 0; i < self.buttonItems.count; i++) {
+        PageCateButtonItem *buttonItem = self.buttonItems[i];
         buttonItem.index = i;
         __weak typeof(self) weakSelf = self;
         buttonItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
@@ -184,11 +184,11 @@ selectedIndex = _selectedIndex;
                 [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
                     make.left.top.equalTo(self.cateTitleContentView);
                     make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-                    make.width.mas_equalTo(sizeToFltWidth);
+                    make.width.mas_equalTo(_sizeToFltWidth);
                 }];
             }
             else {
-                if (i == self.cateItems.count - 1) {
+                if (i == self.buttonItems.count - 1) {
                     [buttonItem.button mas_remakeConstraints:^(MASConstraintMaker *make) {
                         make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
                         make.top.equalTo(_lastButton);
@@ -217,7 +217,7 @@ selectedIndex = _selectedIndex;
                 }];
             }
             else {
-                if (i == self.cateItems.count - 1) {
+                if (i == self.buttonItems.count - 1) {
                     [buttonItem.button mas_remakeConstraints:^(MASConstraintMaker *make) {
                         make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
                         make.top.equalTo(_lastButton);
@@ -280,7 +280,7 @@ selectedIndex = _selectedIndex;
     if (underLineStyle == PageCateButtonViewUnderLineStyleDefault) {
         [self updateUpderLinePointForButtonItem:selectedItem];
     }
-
+    
 }
 
 - (void)setSeparatorStyle:(PageCateButtonViewSeparatorStyle)separatorStyle {
@@ -302,16 +302,16 @@ selectedIndex = _selectedIndex;
 
 - (void)selecteButtonItemWithIndex:(NSInteger)index {
     
-    if (index > self.cateItems.count - 1 || index < 0) {
+    if (index > self.buttonItems.count - 1 || index < 0) {
         return;
     }
-    PageCateButtonItem *buttonItem = self.cateItems[index];
+    PageCateButtonItem *buttonItem = self.buttonItems[index];
     [self buttonItemClick:buttonItem];
 }
 
 - (void)setButtonItemTitle:(NSString *)title index:(NSInteger)index {
-    if (index < self.cateItems.count) {
-        PageCateButtonItem *buttonItem = self.cateItems[index];
+    if (index < self.buttonItems.count) {
+        PageCateButtonItem *buttonItem = self.buttonItems[index];
         buttonItem.title = title;
         [self setUnderLineStyle:self.underLineStyle];
     }
@@ -319,7 +319,7 @@ selectedIndex = _selectedIndex;
 
 - (NSInteger)selectedIndex {
     
-    return  _selectedIndex == 0 || _selectedIndex > self.cateItems.count ? self.previousSelectedBtnItem.index : _selectedIndex;
+    return  _selectedIndex == 0 || _selectedIndex > self.buttonItems.count ? self.previousSelectedBtnItem.index : _selectedIndex;
 }
 
 
@@ -373,8 +373,8 @@ selectedIndex = _selectedIndex;
     }
     
     if (self.itemTitleScale > 0) {
-        for (NSInteger i = 0; i < self.cateItems.count; ++i) {
-            PageCateButtonItem *item = self.cateItems[i];
+        for (NSInteger i = 0; i < self.buttonItems.count; ++i) {
+            PageCateButtonItem *item = self.buttonItems[i];
             item.button.transform = CGAffineTransformMakeScale(1, 1);
         }
         buttonItem.button.transform = CGAffineTransformMakeScale(1 + self.itemTitleScale, 1 + self.itemTitleScale);
@@ -411,9 +411,13 @@ selectedIndex = _selectedIndex;
     [self layoutIfNeeded];
     void (^animationBlock)() = ^{
         CGRect underLineFrame = self.underLineView.frame;
-        underLineFrame.size.width = buttonItem.contentWidth;
+        if (self.sizeToFltWhenScreenNotPaved) {
+            underLineFrame.size.width = _sizeToFltWidth ?: buttonItem.contentWidth;
+        } else {
+            underLineFrame.size.width = buttonItem.contentWidth;
+        }
         underLineFrame.size.height = _underLineHeight;
-        underLineFrame.origin.y = self.frame.size.height - _underLineHeight - _separatorHeight;
+        underLineFrame.origin.y = self.frame.size.height - _underLineHeight;
         self.underLineView.frame = underLineFrame;
         CGPoint center = self.underLineView.center;
         center.x = buttonItem.button.center.x;
@@ -433,8 +437,8 @@ selectedIndex = _selectedIndex;
 
 - (void)scrollButtonFormIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress {
     
-    PageCateButtonItem *fromItem = self.cateItems[fromIndex];
-    PageCateButtonItem *toItem = self.cateItems[toIndex];
+    PageCateButtonItem *fromItem = self.buttonItems[fromIndex];
+    PageCateButtonItem *toItem = self.buttonItems[toIndex];
     _selectedIndex = toIndex;
     [self setupCenterForButtonItem:toItem];
     
@@ -456,7 +460,7 @@ selectedIndex = _selectedIndex;
         }
     }
     
-
+    
     if (self.itemTitleScale) {
         // 左边缩放
         fromItem.button.transform = CGAffineTransformMakeScale((1 - progress) * self.itemTitleScale + 1, (1 - progress) * self.itemTitleScale + 1);
@@ -569,8 +573,17 @@ selectedIndex = _selectedIndex;
     }
 }
 
+- (void)setSeparatorBackgroundColor:(UIColor *)separatorBackgroundColor {
+    _separatorBackgroundColor = separatorBackgroundColor;
+    if (separatorBackgroundColor) {
+        self.separatorView.image = [UIImage new];
+        _separatorImage = [UIImage new];
+        self.separatorView.backgroundColor = separatorBackgroundColor;
+    }
+}
+
 - (PageCateButtonItem *)getButtonItemByButton:(UIButton *)button {
-    NSUInteger foundIdxInItems = [self.cateItems indexOfObjectPassingTest:^BOOL(PageCateButtonItem * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+    NSUInteger foundIdxInItems = [self.buttonItems indexOfObjectPassingTest:^BOOL(PageCateButtonItem * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         BOOL res = obj.button == button;
         if (res) {
             *stop = YES;
@@ -578,7 +591,7 @@ selectedIndex = _selectedIndex;
         return res;
     }];
     if (foundIdxInItems != NSNotFound) {
-        return [self.cateItems objectAtIndex:foundIdxInItems];
+        return [self.buttonItems objectAtIndex:foundIdxInItems];
     }
     return nil;
 }
@@ -586,7 +599,7 @@ selectedIndex = _selectedIndex;
 - (PageCateButtonItem *)getCurrentSelectedButtonitem {
     
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSelected == YES"] ;
-    NSArray *selectedItems = [self.cateItems filteredArrayUsingPredicate:predicate];
+    NSArray *selectedItems = [self.buttonItems filteredArrayUsingPredicate:predicate];
     return selectedItems.firstObject;
 }
 
@@ -633,7 +646,7 @@ selectedIndex = _selectedIndex;
         scrollView.showsHorizontalScrollIndicator = NO;
         scrollView.showsVerticalScrollIndicator = NO;
         _cateTitleView = scrollView;
-//        _cateTitleView.frame = CGRectMake(0, 0, CGRectGetWidth(self.frame) - self.rightItem.contentWidth, CGRectGetHeight(self.frame));
+        //        _cateTitleView.frame = CGRectMake(0, 0, CGRectGetWidth(self.frame) - self.rightItem.contentWidth, CGRectGetHeight(self.frame));
     }
     return _cateTitleView;
 }
@@ -643,6 +656,7 @@ selectedIndex = _selectedIndex;
         _underLineView.backgroundColor = [UIColor redColor];
         MASAttachKeys(_underLineView);
     }
+    [self bringSubviewToFront:_underLineView];
     return _underLineView;
 }
 
@@ -660,8 +674,9 @@ selectedIndex = _selectedIndex;
         separatorView.image = self.separatorImage;
         separatorView.backgroundColor = self.separatorBackgroundColor;
         _separatorView = separatorView;
-        MASAttachKeys(_separatorView); 
+        MASAttachKeys(_separatorView);
     }
+    [self insertSubview:_separatorView aboveSubview:_underLineView];
     return _separatorView;
 }
 
@@ -689,10 +704,8 @@ selectedIndex = _selectedIndex;
         _button.imageView.contentMode = UIViewContentModeScaleAspectFit;
         _button.contentMode = UIViewContentModeScaleAspectFit;
         [_button setTitleColor:[UIColor blackColor] forState:(UIControlStateNormal)];
-//        [_button setTitleColor:[UIColor redColor] forState:(UIControlStateSelected)];
+        //        [_button setTitleColor:[UIColor redColor] forState:(UIControlStateSelected)];
         [_button addTarget:self action:@selector(buttonClick:) forControlEvents:UIControlEventTouchUpInside];
-        PageCateButton *btn = (PageCateButton *)_button;
-        btn.edgeInsetsStyle = PageCateButtonEdgeInsetsStyleImageTop;
     }
     return self;
 }
@@ -719,7 +732,6 @@ selectedIndex = _selectedIndex;
 - (void)setImageName:(NSString *)imageName {
     _imageName = imageName;
     UIImage *image = [UIImage imageNamed:imageName];
-//    image = [self scaleToSize:image size:CGSizeMake(30, 30)];
     [_button setImage:image forState:UIControlStateNormal];
 }
 
@@ -759,17 +771,6 @@ selectedIndex = _selectedIndex;
     return _textFont;
 }
 
-- (UIImage *)scaleToSize:(UIImage *)img size:(CGSize)size {
-    UIGraphicsBeginImageContext(size);
-    
-    [img drawInRect:CGRectMake(0, 0, size.width, size.height)];
-    
-    UIImage *scaledImage = UIGraphicsGetImageFromCurrentImageContext();
-    
-    UIGraphicsEndImageContext();
-    
-    return scaledImage;
-}
 
 @end
 
@@ -805,6 +806,7 @@ selectedIndex = _selectedIndex;
 
 
 @end
+
 
 @implementation DefaultUnderLineView
 

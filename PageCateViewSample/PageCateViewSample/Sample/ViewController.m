@@ -92,7 +92,7 @@
         } while (i < 3);
         _cateButtonView = [[PageCateButtonView alloc] init];
         [self.view addSubview:_cateButtonView];
-        _cateButtonView.cateItems = buttonItems;
+        _cateButtonView.buttonItems = buttonItems;
         _cateButtonView.underLineCanScroll = YES;
         PageCateButtonItem *item = [PageCateButtonItem new];
         item.title = @"right";

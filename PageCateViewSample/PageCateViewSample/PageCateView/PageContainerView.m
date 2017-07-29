@@ -177,9 +177,9 @@
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    if (self.triggerScrollTarget == self.cateButtonView) {
-        return;
-    }
+    //    if (self.triggerScrollTarget == self.cateButtonView) {
+    //        return;
+    //    }
     
     [self __scrolling];
 }
@@ -231,7 +231,7 @@
 
 - (NSInteger)totalChanelCount {
     if (self.cateButtonView) {
-        return self.cateButtonView.cateItems.count;
+        return self.cateButtonView.buttonItems.count;
     }
     return self.childViewControllers.count;
 }
@@ -239,6 +239,7 @@
     [self layoutIfNeeded];
     CGFloat offsetX = toIndex * MAX(self.collectionView.frame.size.width, [UIScreen mainScreen].bounds.size.width);
     [self.collectionView setContentOffset:CGPointMake(offsetX, 0) animated:NO];
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -248,6 +249,7 @@
 - (void)pageCateButtonView:(PageCateButtonView *)view didSelectedAtIndex:(NSInteger)index {
     self.triggerScrollTarget = view;
     [self scrollToIndex:index];
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
