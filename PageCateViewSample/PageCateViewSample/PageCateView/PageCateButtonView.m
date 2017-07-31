@@ -181,11 +181,22 @@ selectedIndex = _selectedIndex;
         if (![self isCanScroll] && self.sizeToFltWhenScreenNotPaved) {
             
             if (!_lastButton) {
-                [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-                    make.left.top.equalTo(self.cateTitleContentView);
-                    make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-                    make.width.mas_equalTo(_sizeToFltWidth);
-                }];
+                if (i == self.buttonItems.count - 1) {
+                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
+                        make.left.top.equalTo(self.cateTitleContentView);
+                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
+                        make.width.mas_equalTo(_sizeToFltWidth);
+                        make.right.equalTo(self.cateTitleContentView);
+                    }];
+                } else {
+                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
+                        make.left.top.equalTo(self.cateTitleContentView);
+                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
+                        make.width.mas_equalTo(_sizeToFltWidth);
+                    }];
+                    
+                }
+                
             }
             else {
                 if (i == self.buttonItems.count - 1) {
