@@ -8,6 +8,8 @@
 
 #import <UIKit/UIKit.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 typedef NS_ENUM(NSInteger, PageCateButtonViewUnderLineStyle) {
     PageCateButtonViewUnderLineStyleNone,
     PageCateButtonViewUnderLineStyleDefault
@@ -64,7 +66,7 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
                   buttonItems:(NSArray<PageCateButtonItem *> *)buttonItems
                     rightItem:(PageCateButtonItem *)rightItem;
 
-- (void)setButtonItemTitle:(NSString *)title index:(NSInteger)index;
+- (void)setButtonItemTitle:(NSString *)title forState:(UIControlState)state index:(NSInteger)index;
 
 - (void)scrollButtonFormIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress;
 
@@ -72,13 +74,15 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 
 @interface PageCateButtonItem : NSObject
 
-@property (nonatomic, copy) NSString *title;
-@property (nonatomic, copy) NSString *imageName;
 @property (nonatomic, assign) CGFloat contentWidth;
 @property (nonatomic, strong, readonly) UIButton *button;
 @property (nonatomic, strong) UIFont *textFont;
 @property (nonatomic, assign) NSInteger index;
 @property (nonatomic, assign, getter=isSelected) BOOL selected;
 @property (nonatomic, copy) void (^buttonItemClickBlock)(PageCateButtonItem *item);
+- (void)setTitle:(nullable NSString *)title forState:(UIControlState)state;
+- (void)setImage:(nullable UIImage *)image forState:(UIControlState)state;
 
 @end
+
+NS_ASSUME_NONNULL_END

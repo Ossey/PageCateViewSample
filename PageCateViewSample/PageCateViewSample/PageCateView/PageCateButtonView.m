@@ -283,9 +283,9 @@ selectedIndex = _selectedIndex;
     if (!selectedItem) {
         return;
     }
-    [self.cateTitleView addSubview:self.underLineView];
+    [self addSubview:self.underLineView];
     
-    [self.cateTitleView bringSubviewToFront:self.underLineView];
+    [self bringSubviewToFront:self.underLineView];
     self.underLineView.backgroundColor = self.underLineBackgroundColor;
     
     if (underLineStyle == PageCateButtonViewUnderLineStyleDefault) {
@@ -303,6 +303,7 @@ selectedIndex = _selectedIndex;
     }
     else if (PageCateButtonViewUnderLineStyleDefault) {
         [self addSubview:self.separatorView];
+        [self insertSubview:_separatorView belowSubview:_underLineView];
     }
 }
 
@@ -320,10 +321,10 @@ selectedIndex = _selectedIndex;
     [self buttonItemClick:buttonItem];
 }
 
-- (void)setButtonItemTitle:(NSString *)title index:(NSInteger)index {
+- (void)setButtonItemTitle:(NSString *)title forState:(UIControlState)state index:(NSInteger)index {
     if (index < self.buttonItems.count) {
         PageCateButtonItem *buttonItem = self.buttonItems[index];
-        buttonItem.title = title;
+        [buttonItem setTitle:title forState:state];
         [self setUnderLineStyle:self.underLineStyle];
     }
 }
@@ -667,7 +668,6 @@ selectedIndex = _selectedIndex;
         _underLineView.backgroundColor = [UIColor redColor];
         MASAttachKeys(_underLineView);
     }
-    [self bringSubviewToFront:_underLineView];
     return _underLineView;
 }
 
@@ -687,7 +687,6 @@ selectedIndex = _selectedIndex;
         _separatorView = separatorView;
         MASAttachKeys(_separatorView);
     }
-    [self insertSubview:_separatorView aboveSubview:_underLineView];
     return _separatorView;
 }
 
@@ -735,15 +734,12 @@ selectedIndex = _selectedIndex;
     return self.button.isSelected;
 }
 
-- (void)setTitle:(NSString *)title {
-    _title = title;
-    [_button setTitle:title forState:UIControlStateNormal];
+- (void)setTitle:(NSString *)title forState:(UIControlState)state {
+    [_button setTitle:title forState:state];
 }
 
-- (void)setImageName:(NSString *)imageName {
-    _imageName = imageName;
-    UIImage *image = [UIImage imageNamed:imageName];
-    [_button setImage:image forState:UIControlStateNormal];
+- (void)setImage:(UIImage *)image forState:(UIControlState)state {
+    [_button setImage:image forState:state];
 }
 
 - (void)setTextFont:(UIFont *)textFont {
@@ -756,7 +752,7 @@ selectedIndex = _selectedIndex;
         
         NSString *currentText = self.button.currentTitle;
         UIImage *currentImage = self.button.currentImage;
-        _contentWidth = [self.title sizeWithMaxSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:self.textFont].width;
+        _contentWidth = [currentText sizeWithMaxSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:self.textFont].width;
         /// 只有文字， 没有图片时
         if (currentText.length && !currentImage) {
             return _contentWidth += 10;

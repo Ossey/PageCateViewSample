@@ -85,8 +85,10 @@
         do {
             PageCateButtonItem *buttonItem = [PageCateButtonItem new];
             buttonItem.contentWidth = 60;
-            buttonItem.title = [NSString stringWithFormat:@"list%ld", i];
-            buttonItem.imageName = [NSString stringWithFormat:@"trip_sharing_%ld_publish_selected", i+1];
+            NSString *title = [NSString stringWithFormat:@"list%ld", i];
+            [buttonItem setTitle:title forState:UIControlStateNormal];
+            NSString *imageName = [NSString stringWithFormat:@"trip_sharing_%ld_publish_selected", i+1];
+            [buttonItem setImage:[UIImage imageNamed:imageName] forState:UIControlStateNormal];
             [buttonItems addObject:buttonItem];
             i++;
         } while (i < 3);
@@ -95,7 +97,8 @@
         _cateButtonView.buttonItems = buttonItems;
         _cateButtonView.underLineCanScroll = YES;
         PageCateButtonItem *item = [PageCateButtonItem new];
-        item.title = @"right";
+        NSString *title = @"right";
+        [item setTitle:title forState:UIControlStateNormal];
         [item.button setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
         item.button.backgroundColor = [UIColor colorWithWhite:0.8 alpha:0.2];
         _cateButtonView.rightItem = item;

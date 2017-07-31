@@ -9,6 +9,8 @@
 #import <UIKit/UIKit.h>
 #import "PageCateButtonView.h"
 
+NS_ASSUME_NONNULL_BEGIN
+
 @class PageContainerView;
 
 @protocol PageContainerViewDelegate <NSObject>
@@ -38,3 +40,5 @@
 - (void)reloadData;
 
 @end
+
+NS_ASSUME_NONNULL_END
