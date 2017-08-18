@@ -59,7 +59,7 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 - (instancetype)initWithFrame:(CGRect)frame;
 
 - (instancetype)initWithFrame:(CGRect)frame
-                     delegate:(id<PageCateButtonViewDelegate>)delegate
+                     delegate:(nullable id<PageCateButtonViewDelegate>)delegate
                   buttonItems:(NSArray<PageCateButtonItem *> *)buttonItems
                     rightItem:(PageCateButtonItem *)rightItem;
 - (instancetype)initWithFrame:(CGRect)frame
