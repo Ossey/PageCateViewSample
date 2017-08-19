@@ -60,6 +60,8 @@
 @property (nonatomic, strong) CateButtonContentView *cateTitleContentView;
 @property (nonatomic, strong) UIImageView *separatorView;
 @property (nonatomic, weak) PageCateButtonItem *previousSelectedBtnItem;
+@property (nonatomic, strong) PageCateButtonItem *rightItem;
+@property (nonatomic, strong) NSArray<PageCateButtonItem *> *buttonItems;
 
 @end
 
@@ -73,25 +75,6 @@
 underLineImage = _underLineImage,
 underLineBackgroundColor = _underLineBackgroundColor,
 selectedIndex = _selectedIndex;
-
-- (instancetype)initWithFrame:(CGRect)frame buttonItems:(NSArray<PageCateButtonItem *> *)buttonItems rightItem:(PageCateButtonItem *)rightItem {
-    
-    return [self initWithFrame:frame delegate:nil buttonItems:buttonItems rightItem:rightItem];
-}
-
-- (instancetype)initWithFrame:(CGRect)frame delegate:(id<PageCateButtonViewDelegate>)delegate buttonItems:(NSArray<PageCateButtonItem *> *)buttonItems rightItem:(PageCateButtonItem *)rightItem {
-    
-    if (self = [self initWithFrame:frame]) {
-        
-        _delegate = delegate;
-        _rightItem = rightItem;
-        _buttonItems = buttonItems;
-        self.clipsToBounds = YES;
-        self.layer.masksToBounds = YES;
-        
-    }
-    return self;
-}
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -153,36 +136,12 @@ selectedIndex = _selectedIndex;
     [self reloadSubviews];
 }
 
-- (void)setButtonItems:(NSArray<PageCateButtonItem *> *)buttonItems {
-    _buttonItems = buttonItems;
-    
-    [self reloadSubviews];
-}
 
 - (void)setSizeToFltWhenScreenNotPaved:(BOOL)sizeToFltWhenScreenNotPaved {
     if ([self isCanScroll]) {
         return;
     }
     self.cateTitleContentView.sizeToFltWhenScreenNotPaved = sizeToFltWhenScreenNotPaved;
-    [self reloadSubviews];
-}
-
-- (void)setRightItem:(PageCateButtonItem *)rightItem {
-    if (_rightItem.button == rightItem.button) {
-        return;
-    }
-    _rightItem = rightItem;
-    
-    if (rightItem) {
-        
-        self.rightItem.index = self.buttonItems.count + 1;
-        __weak typeof(self) weakSelf = self;
-        self.rightItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
-            [weakSelf rightButtonItemClick:item];
-        };
-        [self addSubview:self.rightItem.button];
-    }
-    
     [self reloadSubviews];
 }
 
@@ -206,6 +165,17 @@ selectedIndex = _selectedIndex;
 
 
 - (void)reloadSubviews {
+    
+    self.rightItem = [self _rightButtonItemForPageCateButtonView];
+    self.buttonItems = [self _buttonItemsForPageCateButtonView];
+    if (self.rightItem.button) {
+        self.rightItem.index = self.buttonItems.count + 1;
+        __weak typeof(self) weakSelf = self;
+        self.rightItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
+            [weakSelf rightButtonItemClick:item];
+        };
+        [self addSubview:self.rightItem.button];
+    }
     
     [self setupConstraints];
     
@@ -232,9 +202,9 @@ selectedIndex = _selectedIndex;
     self.cateTitleContentView.buttonItems = self.buttonItems;
     
     
+    [self setSelectedIndex:self.selectedIndex];
     [self setUnderLineStyle:_underLineStyle];
     [self setSeparatorStyle:_separatorStyle];
-    [self setSelectedIndex:self.selectedIndex];
     
 }
 
@@ -318,6 +288,28 @@ selectedIndex = _selectedIndex;
         [self.delegate pageCateButtonView:self didSelectedAtIndex:buttonItem.index];
     }
 }
+
+- (PageCateButtonItem *)_rightButtonItemForPageCateButtonView {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(rightButtonItemForPageCateButtonView)]) {
+        return [self.delegate rightButtonItemForPageCateButtonView];
+    }
+    return nil;
+}
+
+- (BOOL)canDisplayRightButton {
+    if ((self.rightItem.button.currentImage || self.rightItem.button.currentTitle) && self.rightItem.button.superview) {
+        return YES;
+    }
+    return NO;
+}
+
+- (NSArray<PageCateButtonItem *> *)_buttonItemsForPageCateButtonView {
+    if (self.delegate) {
+        return [self.delegate buttonItemsForPageCateButtonView];
+    }
+    return nil;
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -523,7 +515,7 @@ selectedIndex = _selectedIndex;
                                                     multiplier:1.0
                                                       constant:0.0]];
     
-    if (!self.rightItem.button) {
+    if (![self canDisplayRightButton]) {
         _cateTitleViewRightConstraint = [NSLayoutConstraint constraintWithItem:self.cateTitleView
                                                          attribute:NSLayoutAttributeRight
                                                          relatedBy:NSLayoutRelationEqual
@@ -531,7 +523,7 @@ selectedIndex = _selectedIndex;
                                                          attribute:NSLayoutAttributeRight
                                                         multiplier:1.0
                                                           constant:0.0];
-        
+        [self.rightItem.button removeFromSuperview];
     } else {
         
         _cateTitleViewRightConstraint = [NSLayoutConstraint constraintWithItem:self.cateTitleView
@@ -1020,7 +1012,9 @@ selectedIndex = _selectedIndex;
 }
 
 - (void)updateUpderLinePointForButtonItem:(PageCateButtonItem *)buttonItem {
-    [self layoutIfNeeded];
+    [UIView performWithoutAnimation:^{
+        [self layoutIfNeeded];
+    }];
     void (^animationBlock)() = ^{
         CGRect underLineFrame = self.underLineView.frame;
         if (self.sizeToFltWhenScreenNotPaved) {

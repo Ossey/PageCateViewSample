@@ -261,6 +261,19 @@
     
 }
 
+- (PageCateButtonItem *)rightButtonItemForPageCateButtonView {
+    PageCateButtonItem *item = [PageCateButtonItem new];
+    NSString *title = @"right";
+    [item setTitle:title forState:UIControlStateNormal];
+    [item.button setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+    item.button.backgroundColor = [UIColor colorWithWhite:0.8 alpha:0.2];
+    return item;
+}
+
+- (NSArray<PageCateButtonItem *> *)buttonItemsForPageCateButtonView {
+    return [self.delegate buttonItemsForPageCateButtonView];
+}
+
 ////////////////////////////////////////////////////////////////////////
 #pragma mark -
 ////////////////////////////////////////////////////////////////////////

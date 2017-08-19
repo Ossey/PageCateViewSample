@@ -12,7 +12,7 @@
 #import "Sample1TableViewController.h"
 #import "Masonry.h"
 
-@interface ViewController () <PageContainerViewDelegate, PageCateButtonViewDelegate>
+@interface ViewController () <PageContainerViewDelegate>
 @property (nonatomic, strong) PageCateButtonView *cateButtonView;
 @property (nonatomic, strong) PageContainerView *pageContentView;
 @end
@@ -39,7 +39,10 @@
 
 - (void)viewWillLayoutSubviews {
     [super viewWillLayoutSubviews];
-  
+    
+    
+   
+
 }
 
 static const NSInteger count = 8;
@@ -51,11 +54,7 @@ static const NSInteger count = 8;
     self.pageContentView = [[PageContainerView alloc] init];
     self.pageContentView.delegate = self;
     [self.view addSubview:_pageContentView];
-    [_pageContentView mas_updateConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(_cateButtonView.mas_bottom);
-        make.left.right.bottom.equalTo(self.view);
-    }];
-    self.pageContentView.rootViewController = self;
+        self.pageContentView.rootViewController = self;
     NSMutableArray *vcs = @[].mutableCopy;
     NSInteger i = 0;
     do {
@@ -64,6 +63,10 @@ static const NSInteger count = 8;
         i++;
     } while (i < count);
     self.pageContentView.childViewControllers = vcs;
+    [_pageContentView mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(_cateButtonView.mas_bottom);
+        make.left.right.bottom.equalTo(self.view);
+    }];
     
     self.cateButtonView.selectedIndex = 1;
 }
@@ -73,6 +76,27 @@ static const NSInteger count = 8;
 
 }
 
+- (NSArray<PageCateButtonItem *> *)buttonItemsForPageCateButtonView {
+    NSMutableArray *buttonItems = @[].mutableCopy;
+    NSInteger i = 0;
+    do {
+        PageCateButtonItem *buttonItem = [PageCateButtonItem new];
+        buttonItem.contentWidth = 60;
+        NSString *title = nil;
+        if (i <= 12) {
+            title = [NSString stringWithFormat:@"list%ld", i];
+        }
+        else {
+            title = [NSString stringWithFormat:@"list%ld", i+10000];
+        }
+        [buttonItem setTitle:title forState:UIControlStateNormal];
+        NSString *imageName = [NSString stringWithFormat:@"trip_sharing_%ld_publish_selected", i+1];
+        [buttonItem setImage:[UIImage imageNamed:imageName] forState:UIControlStateNormal];
+        [buttonItems addObject:buttonItem];
+        i++;
+    } while (i < count);
+    return buttonItems;
+}
 
 - (PageCateButtonView *)pageCateButtonViewForContainerView {
     return self.cateButtonView;
@@ -81,46 +105,19 @@ static const NSInteger count = 8;
 
 - (PageCateButtonView *)cateButtonView {
     if (!_cateButtonView) {
-        
-        NSMutableArray *buttonItems = @[].mutableCopy;
-        NSInteger i = 0;
-        do {
-            PageCateButtonItem *buttonItem = [PageCateButtonItem new];
-            buttonItem.contentWidth = 60;
-            NSString *title = nil;
-            if (i <= 12) {
-                title = [NSString stringWithFormat:@"list%ld", i];
-            }
-            else {
-               title = [NSString stringWithFormat:@"list%ld", i+10000];
-            }
-            [buttonItem setTitle:title forState:UIControlStateNormal];
-            NSString *imageName = [NSString stringWithFormat:@"trip_sharing_%ld_publish_selected", i+1];
-            [buttonItem setImage:[UIImage imageNamed:imageName] forState:UIControlStateNormal];
-            [buttonItems addObject:buttonItem];
-            i++;
-        } while (i < count);
+    
         _cateButtonView = [[PageCateButtonView alloc] init];
         [self.view addSubview:_cateButtonView];
-        _cateButtonView.buttonItems = buttonItems;
         _cateButtonView.underLineCanScroll = YES;
         _cateButtonView.separatorHeight = 2.0;
         _cateButtonView.underLineHeight = 3.0;
         _cateButtonView.sizeToFltWhenScreenNotPaved = YES;
-        PageCateButtonItem *item = [PageCateButtonItem new];
-        NSString *title = @"right";
-        [item setTitle:title forState:UIControlStateNormal];
-        [item.button setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
-        item.button.backgroundColor = [UIColor colorWithWhite:0.8 alpha:0.2];
-        _cateButtonView.rightItem = item;
-        
         CGFloat cateButtonViewTop = self.navigationController.isNavigationBarHidden ? 0 : 64;
         [_cateButtonView mas_updateConstraints:^(MASConstraintMaker *make) {
             make.left.right.equalTo(self.view);
             make.top.mas_equalTo(cateButtonViewTop);
             make.height.mas_equalTo(60);
         }];
-        
     }
     [self.view bringSubviewToFront:_cateButtonView];
     return _cateButtonView;

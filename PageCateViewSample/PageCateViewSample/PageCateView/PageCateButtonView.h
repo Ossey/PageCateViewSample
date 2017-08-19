@@ -25,17 +25,19 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 
 @protocol PageCateButtonViewDelegate <NSObject>
 
+- (NSArray<PageCateButtonItem *> *)buttonItemsForPageCateButtonView;
 @optional
 - (void)pageCateButtonView:(PageCateButtonView *)view didSelectedAtIndex:(NSInteger)index;
 - (void)pageCateButtonView:(PageCateButtonView *)view didSelecteRightButtonItem:(PageCateButtonItem *)rightItem;
+- (PageCateButtonItem *)rightButtonItemForPageCateButtonView;
 
 @end
 
 @interface PageCateButtonView : UIView
 
 @property (nonatomic, weak) id<PageCateButtonViewDelegate> delegate;
-@property (nonatomic, strong) NSArray<PageCateButtonItem *> *buttonItems;
-@property (nonatomic, strong) PageCateButtonItem *rightItem;
+@property (nonatomic, strong, readonly) NSArray<PageCateButtonItem *> *buttonItems;
+@property (nonatomic, strong, readonly) PageCateButtonItem *rightItem;
 @property (nonatomic, assign) CGFloat buttonMargin;
 @property (nonatomic, assign) UIColor *currentItemBackGroundColor;
 @property (nonatomic, strong) UIColor *underLineBackgroundColor;
@@ -57,14 +59,6 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 @property (nonatomic, assign) CGFloat itemTitleScale;
 
 - (instancetype)initWithFrame:(CGRect)frame;
-
-- (instancetype)initWithFrame:(CGRect)frame
-                     delegate:(nullable id<PageCateButtonViewDelegate>)delegate
-                  buttonItems:(NSArray<PageCateButtonItem *> *)buttonItems
-                    rightItem:(PageCateButtonItem *)rightItem;
-- (instancetype)initWithFrame:(CGRect)frame
-                  buttonItems:(NSArray<PageCateButtonItem *> *)buttonItems
-                    rightItem:(PageCateButtonItem *)rightItem;
 
 - (void)setButtonItemTitle:(NSString *)title forState:(UIControlState)state index:(NSInteger)index;
 
