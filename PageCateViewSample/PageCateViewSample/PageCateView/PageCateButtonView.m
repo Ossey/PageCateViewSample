@@ -159,6 +159,12 @@ selectedIndex = _selectedIndex;
     [self removeConstraints:self.separatorView.constraints];
     [self removeConstraint:_cateTitleViewRightConstraint];
     [self removeConstraints:self.cateTitleContentView.constraints];
+    // 只移除self != firstItem, 防止将外界添加给self的约束移除掉了
+    [[self.constraints mutableCopy] enumerateObjectsUsingBlock:^(__kindof NSLayoutConstraint * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (![obj.firstItem isEqual:self]) {
+            [self removeConstraint:obj];
+        }
+    }];
 }
 
 
@@ -631,7 +637,7 @@ selectedIndex = _selectedIndex;
                                                                   constant:0.0];
         [self addConstraint:top];
         [self addConstraint:bottom];
-        right.priority = 999;
+        right.priority = UILayoutPriorityDefaultHigh;
         [self addConstraint:right];
         [self addConstraint:width];
         
@@ -689,15 +695,15 @@ selectedIndex = _selectedIndex;
                                                                                options:kNilOptions
                                                                                metrics:nil
                                                                                  views:subviewDict]];
-    NSLayoutConstraint *height = [NSLayoutConstraint constraintWithItem:self.cateTitleContentView
+    NSLayoutConstraint *cateTitleContentViewHeight = [NSLayoutConstraint constraintWithItem:self.cateTitleContentView
                                  attribute:NSLayoutAttributeHeight
                                  relatedBy:NSLayoutRelationEqual
                                     toItem:self.cateTitleView
                                  attribute:NSLayoutAttributeHeight
                                 multiplier:1.0
                                   constant:0.0];
-    height.priority = UILayoutPriorityDefaultHigh;
-    [self.cateTitleView addConstraint:height];
+    cateTitleContentViewHeight.priority = UILayoutPriorityDefaultHigh;
+    [self.cateTitleView addConstraint:cateTitleContentViewHeight];
 
     [self setNeedsLayout];
 }
