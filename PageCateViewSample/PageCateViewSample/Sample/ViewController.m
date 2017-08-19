@@ -96,6 +96,7 @@
         [self.view addSubview:_cateButtonView];
         _cateButtonView.buttonItems = buttonItems;
         _cateButtonView.underLineCanScroll = YES;
+        _cateButtonView.separatorHeight = 5.0;
         PageCateButtonItem *item = [PageCateButtonItem new];
         NSString *title = @"right";
         [item setTitle:title forState:UIControlStateNormal];
