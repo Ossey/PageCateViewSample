@@ -7,20 +7,23 @@
 //
 
 #import "PageCateButtonView.h"
-#import "Masonry.h"
 
-typedef NS_ENUM(NSUInteger, PageCateButtonEdgeInsetsStyle) {
-    PageCateButtonEdgeInsetsStyleImageLeft,
-    PageCateButtonEdgeInsetsStyleImageRight,
-    PageCateButtonEdgeInsetsStyleImageTop,
-    PageCateButtonEdgeInsetsStyleImageBottom
-};
 
 @interface PageCateButton : UIButton
 
-@property (nonatomic) PageCateButtonEdgeInsetsStyle edgeInsetsStyle;
-
 @property (nonatomic) CGFloat imageTitleSpace;
+
+@end
+
+@interface CateButtonContentView : UIView
+
+@property (nonatomic, assign) BOOL isCanScroll;
+@property (nonatomic, assign) CGFloat buttonMargin;
+@property (nonatomic, assign) BOOL sizeToFltWhenScreenNotPaved;
+@property (nonatomic, strong) NSArray<PageCateButtonItem *> *buttonItems;
+@property (nonatomic, assign) CGFloat sizeToFltWidth;
+/** 根据所有button 和 间距 计算到的总宽度 */
+@property (nonatomic, assign) CGFloat scrollViewContentWidth;
 
 @end
 
@@ -38,15 +41,11 @@ typedef NS_ENUM(NSUInteger, PageCateButtonEdgeInsetsStyle) {
 @interface PageCateButtonView ()
 
 @property (nonatomic, strong) UIScrollView *cateTitleView;
-@property (nonatomic, strong) UIView *cateTitleContentView;
-/** 根据所有button 和 间距 计算到的总宽度 */
-@property (nonatomic, assign) CGFloat scrollViewContentWidth;
+@property (nonatomic, strong) CateButtonContentView *cateTitleContentView;
 @property (nonatomic, strong) UIImageView *separatorView;
 @property (nonatomic, strong) DefaultUnderLineView *underLineView;
 @property (nonatomic, weak) PageCateButtonItem *previousSelectedBtnItem;
 @property (nonatomic, assign) BOOL fristAppearUnderLine;
-@property (nonatomic, weak) UIView *lastButton;
-@property (nonatomic, assign) CGFloat sizeToFltWidth;
 
 @end
 
@@ -106,7 +105,6 @@ selectedIndex = _selectedIndex;
     _separatorStyle = PageCateButtonViewSeparatorStyleDefault;
     [self addSubview:self.cateTitleView];
     [self.cateTitleView addSubview:self.cateTitleContentView];
-    MASAttachKeys(_cateTitleView, _cateTitleContentView);
 }
 
 - (void)setDelegate:(id<PageCateButtonViewDelegate>)delegate {
@@ -154,9 +152,9 @@ selectedIndex = _selectedIndex;
 }
 
 - (void)_removeAllConstraints {
-    [self removeConstraints:self.cateTitleContentView.constraints];
-    [self removeConstraints:self.cateTitleView.constraints];
-    [self.cateTitleContentView removeConstraints:self.cateTitleContentView.constraints];
+//    [self removeConstraints:self.cateTitleContentView.constraints];
+//    [self removeConstraints:self.cateTitleView.constraints];
+//    [self.cateTitleContentView removeConstraints:self.cateTitleContentView.constraints];
 }
 
 
@@ -166,107 +164,26 @@ selectedIndex = _selectedIndex;
     [self _removeAllSubviews];
     [self _removeAllConstraints];
     
-    _lastButton = nil;
+    
     [self layoutIfNeeded];
-    self.scrollViewContentWidth = 0;
+    
+    self.cateTitleContentView.scrollViewContentWidth = 0;
     for (NSInteger i = 0; i < self.buttonItems.count; ++i) {
         PageCateButtonItem *buttonItem = self.buttonItems[i];
-        self.scrollViewContentWidth += buttonItem.contentWidth;
+        self.cateTitleContentView.scrollViewContentWidth += buttonItem.contentWidth;
     }
     
-    self.scrollViewContentWidth = _buttonMargin * (self.buttonItems.count + 1) + self.scrollViewContentWidth;
-    self.scrollViewContentWidth = ceil(self.scrollViewContentWidth);
+    self.cateTitleContentView.scrollViewContentWidth = _buttonMargin * (self.buttonItems.count + 1) + self.cateTitleContentView.scrollViewContentWidth;
+    self.cateTitleContentView.scrollViewContentWidth = ceil(self.cateTitleContentView.scrollViewContentWidth);
     if (![self isCanScroll] && self.sizeToFltWhenScreenNotPaved) {
-        _sizeToFltWidth = (self.cateTitleView.frame.size.width - (self.buttonItems.count - 1)*_buttonMargin) / self.buttonItems.count;
+        self.cateTitleContentView.sizeToFltWidth = (self.cateTitleView.frame.size.width - (self.buttonItems.count - 1)*_buttonMargin) / self.buttonItems.count;
     } else {
-        _sizeToFltWidth = 0;
-    }
-    for (NSInteger i = 0; i < self.buttonItems.count; i++) {
-        PageCateButtonItem *buttonItem = self.buttonItems[i];
-        buttonItem.index = i;
-        __weak typeof(self) weakSelf = self;
-        buttonItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
-            [weakSelf buttonItemClick:item];
-        };
-        [self.cateTitleContentView addSubview:buttonItem.button];
-        
-        if (![self isCanScroll] && self.sizeToFltWhenScreenNotPaved) {
-            
-            if (!_lastButton) {
-                if (i == self.buttonItems.count - 1) {
-                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-                        make.left.top.equalTo(self.cateTitleContentView);
-                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-                        make.width.mas_equalTo(_sizeToFltWidth);
-                        make.right.equalTo(self.cateTitleContentView);
-                    }];
-                } else {
-                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-                        make.left.top.equalTo(self.cateTitleContentView);
-                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-                        make.width.mas_equalTo(_sizeToFltWidth);
-                    }];
-                    
-                }
-                
-            }
-            else {
-                if (i == self.buttonItems.count - 1) {
-                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
-                        make.top.equalTo(_lastButton);
-                        make.right.equalTo(self.cateTitleContentView);
-                        make.width.mas_equalTo(_lastButton);
-                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-                    }];
-                    
-                } else {
-                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
-                        make.top.equalTo(_lastButton);
-                        make.width.mas_equalTo(_lastButton);
-                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-                    }];
-                }
-            }
-            _lastButton = buttonItem.button;
-            MASAttachKeys(buttonItem.button);
-        } else {
-            if (!_lastButton) {
-                [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-                    make.left.top.equalTo(self.cateTitleContentView);
-                    make.width.mas_equalTo(buttonItem.contentWidth);
-                    make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-                }];
-            }
-            else {
-                if (i == self.buttonItems.count - 1) {
-                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
-                        make.top.equalTo(_lastButton);
-                        make.right.equalTo(self.cateTitleContentView);
-                        make.width.mas_equalTo(buttonItem.contentWidth);
-                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-                    }];
-                    
-                } else {
-                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
-                        make.top.equalTo(_lastButton);
-                        make.width.mas_equalTo(buttonItem.contentWidth);
-                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-                    }];
-                }
-            }
-            
-            _lastButton = buttonItem.button;
-            MASAttachKeys(buttonItem.button);
-        }
-        
-        
+        self.cateTitleContentView.sizeToFltWidth = 0;
     }
     
-    _lastButton = nil;
+    self.cateTitleContentView.buttonItems = self.buttonItems;
+    
+    
     [self setUnderLineStyle:_underLineStyle];
     [self setSeparatorStyle:_separatorStyle];
     [self setSelectedIndex:self.selectedIndex];
@@ -411,7 +328,7 @@ selectedIndex = _selectedIndex;
         return;
     }
     
-    if (self.scrollViewContentWidth <= self.frame.size.width) {
+    if (self.cateTitleContentView.scrollViewContentWidth <= self.frame.size.width) {
         return;
     }
     
@@ -436,7 +353,7 @@ selectedIndex = _selectedIndex;
     void (^animationBlock)() = ^{
         CGRect underLineFrame = self.underLineView.frame;
         if (self.sizeToFltWhenScreenNotPaved) {
-            underLineFrame.size.width = _sizeToFltWidth ?: buttonItem.contentWidth;
+            underLineFrame.size.width = self.cateTitleContentView.sizeToFltWidth ?: buttonItem.contentWidth;
         } else {
             underLineFrame.size.width = buttonItem.contentWidth;
         }
@@ -629,33 +546,114 @@ selectedIndex = _selectedIndex;
 
 - (void)layoutSubviews {
     [super layoutSubviews];
+    
+    [self setupConstraints];
+    
+}
+
+- (void)setupConstraints {
+    [self removeConstraints:self.cateTitleView.constraints];
+    [self removeConstraints:self.rightItem.button.constraints];
+    
+    NSMutableArray<NSString *> *subviewKeyArray = [NSMutableArray arrayWithCapacity:0];
+    NSMutableDictionary *subviewDict = [NSMutableDictionary dictionaryWithCapacity:0];
+    
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.cateTitleView
+                                                     attribute:NSLayoutAttributeTop
+                                                     relatedBy:NSLayoutRelationEqual
+                                                        toItem:self
+                                                     attribute:NSLayoutAttributeTop
+                                                    multiplier:1.0
+                                                      constant:0.0]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.cateTitleView
+                                                     attribute:NSLayoutAttributeBottom
+                                                     relatedBy:NSLayoutRelationEqual
+                                                        toItem:self
+                                                     attribute:NSLayoutAttributeBottom
+                                                    multiplier:1.0
+                                                      constant:0.0]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.cateTitleView
+                                                     attribute:NSLayoutAttributeLeft
+                                                     relatedBy:NSLayoutRelationEqual
+                                                        toItem:self
+                                                     attribute:NSLayoutAttributeLeft
+                                                    multiplier:1.0
+                                                      constant:0.0]];
+    
     if (!self.rightItem.button) {
-        [self.cateTitleView mas_remakeConstraints:^(MASConstraintMaker *make) {
-            make.edges.equalTo(self);
-        }];
+        [self addConstraint:[NSLayoutConstraint constraintWithItem:self.cateTitleView
+                                                         attribute:NSLayoutAttributeRight
+                                                         relatedBy:NSLayoutRelationEqual
+                                                            toItem:self
+                                                         attribute:NSLayoutAttributeRight
+                                                        multiplier:1.0
+                                                          constant:0.0]];
+        
     } else {
-        [self.cateTitleView mas_remakeConstraints:^(MASConstraintMaker *make) {
-            make.top.bottom.left.equalTo(self);
-            make.right.mas_equalTo(self.rightItem.button.mas_left);
-        }];
+        
         // 消除约束的警告：把其中一个关于superview的约束等级修改为High，就可以了；既消除了警告，也不影响视图的现实
-        [self.rightItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-            make.width.mas_equalTo(self.rightItem.contentWidth);
-            make.top.bottom.right.equalTo(self).priorityHigh();
-        }];
+        // rightButton
+        NSLayoutConstraint *width = [NSLayoutConstraint constraintWithItem:self.rightItem.button
+                                                                 attribute:NSLayoutAttributeWidth
+                                                                 relatedBy:NSLayoutRelationEqual
+                                                                    toItem:nil
+                                                                 attribute:NSLayoutAttributeNotAnAttribute
+                                                                multiplier:1.0
+                                                                  constant:self.rightItem.contentWidth];
+        NSLayoutConstraint *top = [NSLayoutConstraint constraintWithItem:self.rightItem.button
+                                                               attribute:NSLayoutAttributeTop
+                                                               relatedBy:NSLayoutRelationEqual
+                                                                  toItem:self
+                                                               attribute:NSLayoutAttributeTop
+                                                              multiplier:1.0
+                                                                constant:0.0];
+        NSLayoutConstraint *bottom = [NSLayoutConstraint constraintWithItem:self.rightItem.button
+                                                                  attribute:NSLayoutAttributeBottom
+                                                                  relatedBy:NSLayoutRelationEqual
+                                                                     toItem:self
+                                                                  attribute:NSLayoutAttributeBottom
+                                                                 multiplier:1.0
+                                                                   constant:0.0];
+        NSLayoutConstraint *right = [NSLayoutConstraint constraintWithItem:self.rightItem.button
+                                                                 attribute:NSLayoutAttributeRight
+                                                                 relatedBy:NSLayoutRelationEqual
+                                                                    toItem:self
+                                                                 attribute:NSLayoutAttributeRight
+                                                                multiplier:1.0
+                                                                  constant:0.0];
+        top.priority = UILayoutPriorityDefaultHigh;
+        [self addConstraint:top];
+        bottom.priority = UILayoutPriorityDefaultHigh;
+        [self addConstraint:bottom];
+        right.priority = UILayoutPriorityDefaultHigh;
+        [self addConstraint:right];
+        [self addConstraint:width];
+        
+        [self addConstraint:[NSLayoutConstraint constraintWithItem:self.cateTitleView
+                                                         attribute:NSLayoutAttributeRight
+                                                         relatedBy:NSLayoutRelationEqual
+                                                            toItem:self.rightItem.button
+                                                         attribute:NSLayoutAttributeLeft
+                                                        multiplier:1.0
+                                                          constant:0.0]];
+        
     }
-    [self.cateTitleContentView mas_updateConstraints:^(MASConstraintMaker *make) {
-        make.edges.equalTo(self.cateTitleView);
-        make.height.equalTo(self.cateTitleView);
-    }];
+    
+    [subviewKeyArray addObject:@"cateTitleContentView"];
+    subviewDict[subviewKeyArray.lastObject] = self.cateTitleContentView;
+    
+    [self.cateTitleView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|-[cateTitleContentView(>=0)]-|" options:kNilOptions metrics:nil views:subviewDict]];
+    [self.cateTitleView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-[cateTitleContentView(>=0)]-separatorHeight-|" options:kNilOptions metrics:@{@"separatorHeight": @(self.separatorHeight)} views:subviewDict]];
+    [self.cateTitleView addConstraint:[NSLayoutConstraint constraintWithItem:self.cateTitleContentView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:self.cateTitleView attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0.0]];
+    
     
     if (self.separatorStyle != PageCateButtonViewSeparatorStyleNone && _separatorView.superview) {
-        [self.separatorView mas_updateConstraints:^(MASConstraintMaker *make) {
-            make.bottom.left.right.equalTo(self);
-            make.height.mas_equalTo(_separatorHeight);
-        }];
+        [subviewKeyArray addObject:@"separatorView"];
+        subviewDict[subviewKeyArray.lastObject] = self.separatorView;
+        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|-[separatorView(>=0)]-|" options:kNilOptions metrics:nil views:subviewDict]];
+        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[separatorView(separatorHeight)]-|" options:kNilOptions metrics:@{@"separatorHeight": @(_separatorHeight)} views:subviewDict]];
+        
     }
-    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -671,6 +669,7 @@ selectedIndex = _selectedIndex;
         scrollView.showsVerticalScrollIndicator = NO;
         _cateTitleView = scrollView;
         //        _cateTitleView.frame = CGRectMake(0, 0, CGRectGetWidth(self.frame) - self.rightItem.contentWidth, CGRectGetHeight(self.frame));
+        scrollView.translatesAutoresizingMaskIntoConstraints = NO;
     }
     return _cateTitleView;
 }
@@ -678,15 +677,16 @@ selectedIndex = _selectedIndex;
     if (!_underLineView) {
         _underLineView = [[DefaultUnderLineView alloc] init];
         _underLineView.backgroundColor = [UIColor redColor];
-        MASAttachKeys(_underLineView);
+        _underLineView.translatesAutoresizingMaskIntoConstraints = NO;
     }
     return _underLineView;
 }
 
 - (UIView *)cateTitleContentView {
     if (!_cateTitleContentView) {
-        _cateTitleContentView = [UIView new];
+        _cateTitleContentView = [CateButtonContentView new];
         _cateTitleContentView.backgroundColor = [UIColor clearColor];
+        _cateTitleContentView.translatesAutoresizingMaskIntoConstraints = NO;
     }
     return _cateTitleContentView;
 }
@@ -697,7 +697,7 @@ selectedIndex = _selectedIndex;
         separatorView.image = self.separatorImage;
         separatorView.backgroundColor = self.separatorBackgroundColor;
         _separatorView = separatorView;
-        MASAttachKeys(_separatorView);
+        separatorView.translatesAutoresizingMaskIntoConstraints = NO;
     }
     return _separatorView;
 }
@@ -706,9 +706,9 @@ selectedIndex = _selectedIndex;
 
 - (BOOL)isCanScroll {
     if (self.rightItem.button) {
-        return self.scrollViewContentWidth > self.bounds.size.width - self.rightItem.contentWidth;
+        return self.cateTitleContentView.scrollViewContentWidth > self.bounds.size.width - self.rightItem.contentWidth;
     }
-    return self.scrollViewContentWidth > self.bounds.size.width;
+    return self.cateTitleContentView.scrollViewContentWidth > self.bounds.size.width;
 }
 
 @end
@@ -728,6 +728,7 @@ selectedIndex = _selectedIndex;
         [_button setTitleColor:[UIColor blackColor] forState:(UIControlStateNormal)];
         //        [_button setTitleColor:[UIColor redColor] forState:(UIControlStateSelected)];
         [_button addTarget:self action:@selector(buttonClick:) forControlEvents:UIControlEventTouchUpInside];
+        _button.translatesAutoresizingMaskIntoConstraints = NO;
     }
     return self;
 }
@@ -870,5 +871,159 @@ selectedIndex = _selectedIndex;
     _titleLabelSize = [title sizeWithMaxSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:self.titleLabel.font];
 }
 
+
+@end
+
+@implementation CateButtonContentView
+
+- (void)setButtonItems:(NSArray<PageCateButtonItem *> *)buttonItems {
+    _buttonItems = buttonItems;
+    
+   
+    [self reloadCateButtons];
+}
+
+- (void)reloadCateButtons {
+    
+    NSMutableArray<NSString *> *subviewKeyArray = [NSMutableArray arrayWithCapacity:0];
+    NSMutableDictionary *subviewDict = [NSMutableDictionary dictionaryWithCapacity:0];
+    NSMutableDictionary *metrics = @{@"leftMargin": @(self.buttonMargin), @"sizeToFltWidth": @(self.sizeToFltWidth)}.mutableCopy;
+    
+    for (NSInteger i = 0; i < self.buttonItems.count; i++) {
+        PageCateButtonItem *buttonItem = self.buttonItems[i];
+        buttonItem.index = i;
+    
+        buttonItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
+            UIView *superView = self.superview;
+            do {
+                if ([superView respondsToSelector:@selector(buttonItemClick:)]) {
+                    [superView performSelectorOnMainThread:@selector(buttonItemClick:) withObject:item waitUntilDone:NO];
+                    superView = nil;
+                }
+            } while (superView);
+        };
+        [self addSubview:buttonItem.button];
+        buttonItem.button.translatesAutoresizingMaskIntoConstraints = NO;
+        [subviewKeyArray addObject:[NSString stringWithFormat:@"button_%ld", i]];
+        subviewDict[subviewKeyArray.lastObject] = buttonItem.button;
+        
+        // 设置垂直之间的约束
+        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:[NSString stringWithFormat:@"V:|[%@(>=0)]|", subviewKeyArray[i]] options:kNilOptions metrics:metrics views:subviewDict]];
+        
+        // 设置水平之间的约束
+        NSMutableString *verticalFormat = [NSMutableString new];
+        
+        CGFloat leftMargin = self.buttonMargin;
+        
+        void (^verticalFormatBlock)(NSString *widthKey) = ^(NSString *widthKey){
+            if (i == self.buttonItems.count - 1) {
+                [verticalFormat appendFormat:@"-(%.f@750)-[%@(>=%@)]-(%.f@750)-", leftMargin, subviewKeyArray[i], widthKey, leftMargin];
+            }
+            else {
+                [verticalFormat appendFormat:@"-(%.f@750)-[%@(>=%@)]", leftMargin, subviewKeyArray[i], widthKey];
+            }
+        };
+        
+        
+        if (!self.isCanScroll && self.sizeToFltWhenScreenNotPaved) {
+            verticalFormatBlock(@"sizeToFltWidth");
+        }
+        else {
+            NSString *contentWidthKey = [NSString stringWithFormat:@"contentWidth_%ld", i];
+            [metrics setValue:@(buttonItem.contentWidth) forKey:contentWidthKey];
+            verticalFormatBlock(contentWidthKey);
+        }
+        
+        
+        
+        
+//        if (![self isCanScroll] && self.sizeToFltWhenScreenNotPaved) {
+//            
+//            if (!_lastButton) {
+//                // 只有一个按钮
+//                if (i == self.buttonItems.count - 1) {
+//                    
+//                    [verticalFormat appendFormat:@"-(%.f(@750))-[%@]-(%.f(@750))-", leftMargin, @"button", leftMargin];
+//                    
+//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
+//                        make.left.top.equalTo(self.cateTitleContentView);
+//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
+//                        make.width.mas_equalTo(_sizeToFltWidth);
+//                        make.right.equalTo(self.cateTitleContentView);
+//                    }];
+//                } else {
+//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
+//                        make.left.top.equalTo(self.cateTitleContentView);
+//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
+//                        make.width.mas_equalTo(_sizeToFltWidth);
+//                    }];
+//                    
+//                }
+//                
+//            }
+//            else {
+//                if (i == self.buttonItems.count - 1) {
+//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
+//                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
+//                        make.top.equalTo(_lastButton);
+//                        make.right.equalTo(self.cateTitleContentView);
+//                        make.width.mas_equalTo(_lastButton);
+//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
+//                    }];
+//                    
+//                } else {
+//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
+//                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
+//                        make.top.equalTo(_lastButton);
+//                        make.width.mas_equalTo(_lastButton);
+//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
+//                    }];
+//                }
+//            }
+//            _lastButton = buttonItem.button;
+//            MASAttachKeys(buttonItem.button);
+//        } else {
+//            if (!_lastButton) {
+//                [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
+//                    make.left.top.equalTo(self.cateTitleContentView);
+//                    make.width.mas_equalTo(buttonItem.contentWidth);
+//                    make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
+//                }];
+//            }
+//            else {
+//                if (i == self.buttonItems.count - 1) {
+//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
+//                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
+//                        make.top.equalTo(_lastButton);
+//                        make.right.equalTo(self.cateTitleContentView);
+//                        make.width.mas_equalTo(buttonItem.contentWidth);
+//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
+//                    }];
+//                    
+//                } else {
+//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
+//                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
+//                        make.top.equalTo(_lastButton);
+//                        make.width.mas_equalTo(buttonItem.contentWidth);
+//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
+//                    }];
+//                }
+//            }
+//            
+//            _lastButton = buttonItem.button;
+//            MASAttachKeys(buttonItem.button);
+//        }
+        
+        if (verticalFormat.length) {
+            [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:[NSString stringWithFormat:@"|%@|", verticalFormat] options:kNilOptions metrics:metrics views:subviewDict]];
+        }
+        
+    }
+    
+//    _lastButton = nil;
+    
+    
+    
+}
 
 @end
