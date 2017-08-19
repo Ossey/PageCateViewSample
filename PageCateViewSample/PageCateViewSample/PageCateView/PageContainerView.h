@@ -23,6 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (UIView *)pageCateChannelViewForContainerView:(PageContainerView *)containerView forIndex:(NSInteger)index;
 - (void)pageContainerView:(PageContainerView *)pageContentView didScrollFromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress;
 - (void)pageCateButtonView:(PageCateButtonView *)view didSelectedAtIndex:(NSInteger)index;
+- (PageCateButtonItem *)rightButtonItemForPageCateButtonView;
 
 @end
 

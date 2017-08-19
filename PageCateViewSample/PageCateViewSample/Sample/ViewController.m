@@ -37,13 +37,6 @@
     // Dispose of any resources that can be recreated.
 }
 
-- (void)viewWillLayoutSubviews {
-    [super viewWillLayoutSubviews];
-    
-    
-   
-
-}
 
 static const NSInteger count = 8;
 
@@ -71,6 +64,9 @@ static const NSInteger count = 8;
     self.cateButtonView.selectedIndex = 1;
 }
 
+////////////////////////////////////////////////////////////////////////
+#pragma mark - PageContainerViewDelegate
+////////////////////////////////////////////////////////////////////////
 
 - (void)pageContainerView:(PageContainerView *)pageContentView didScrollFromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress {
 
@@ -96,6 +92,15 @@ static const NSInteger count = 8;
         i++;
     } while (i < count);
     return buttonItems;
+}
+
+- (PageCateButtonItem *)rightButtonItemForPageCateButtonView {
+    PageCateButtonItem *item = [PageCateButtonItem new];
+    NSString *title = @"right";
+    [item setTitle:title forState:UIControlStateNormal];
+    [item.button setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+    item.button.backgroundColor = [UIColor colorWithWhite:0.8 alpha:0.2];
+    return item;
 }
 
 - (PageCateButtonView *)pageCateButtonViewForContainerView {
