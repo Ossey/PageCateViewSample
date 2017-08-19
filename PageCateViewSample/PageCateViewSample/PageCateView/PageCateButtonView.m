@@ -15,6 +15,10 @@
 
 @end
 
+@interface DefaultUnderLineView : UIImageView
+
+@end
+
 @interface CateButtonContentView : UIView
 
 @property (nonatomic, assign) BOOL isCanScroll;
@@ -24,6 +28,21 @@
 @property (nonatomic, assign) CGFloat sizeToFltWidth;
 /** 根据所有button 和 间距 计算到的总宽度 */
 @property (nonatomic, assign) CGFloat scrollViewContentWidth;
+@property (nonatomic, assign) PageCateButtonViewUnderLineStyle underLineStyle;
+@property (nonatomic, strong) DefaultUnderLineView *underLineView;
+@property (nonatomic, strong) UIColor *underLineBackgroundColor;
+@property (nonatomic, strong) UIImage *underLineImage;
+@property (nonatomic, assign) CGFloat underLineHeight;
+@property (nonatomic, assign) BOOL fristAppearUnderLine;
+
+- (PageCateButtonItem *)getCurrentSelectedButtonitem;
+- (void)updateUpderLinePointForButtonItem:(PageCateButtonItem *)buttonItem;
+// cateTitleView 不可以滚动，underLineView 可以滚动
+- (void)underLineViewnNotFollowCateTitleViewViewlWithProgress:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem;
+/// under line view 不跟随 cateTitleView滚动而滚动
+- (void)underLineViewnNotFollowCateTitleViewViewlWithProgress1:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem;
+// cateTitleView 可以滚动，underLineView 随着滚动
+- (void)underLineViewFollowCateTitleViewViewlWithProgress:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem;
 
 @end
 
@@ -34,18 +53,13 @@
 
 @end
 
-@interface DefaultUnderLineView : UIImageView
-
-@end
 
 @interface PageCateButtonView ()
 
 @property (nonatomic, strong) UIScrollView *cateTitleView;
 @property (nonatomic, strong) CateButtonContentView *cateTitleContentView;
 @property (nonatomic, strong) UIImageView *separatorView;
-@property (nonatomic, strong) DefaultUnderLineView *underLineView;
 @property (nonatomic, weak) PageCateButtonItem *previousSelectedBtnItem;
-@property (nonatomic, assign) BOOL fristAppearUnderLine;
 
 @end
 
@@ -72,6 +86,8 @@ selectedIndex = _selectedIndex;
         _delegate = delegate;
         _rightItem = rightItem;
         _buttonItems = buttonItems;
+        self.clipsToBounds = YES;
+        self.layer.masksToBounds = YES;
         
     }
     return self;
@@ -101,14 +117,35 @@ selectedIndex = _selectedIndex;
     _underLineHeight = 1.0;
     _separatorHeight = 1.0;
     _automaticCenter = YES;
-    _underLineBackgroundColor = [UIColor redColor];
     _separatorBackgroundColor = [UIColor blueColor];
-    _fristAppearUnderLine = YES;
     _sizeToFltWhenScreenNotPaved = YES;
     _underLineStyle = PageCateButtonViewUnderLineStyleDefault;
     _separatorStyle = PageCateButtonViewSeparatorStyleDefault;
     [self addSubview:self.cateTitleView];
     [self.cateTitleView addSubview:self.cateTitleContentView];
+    
+    [self.cateTitleView addObserver:self
+                         forKeyPath:NSStringFromSelector(@selector(contentOffset))
+                            options:NSKeyValueObservingOptionNew
+                            context:NULL];
+}
+
+- (void)dealloc {
+    [self.cateTitleView removeObserver:self forKeyPath:NSStringFromSelector(@selector(contentOffset))];
+}
+
+////////////////////////////////////////////////////////////////////////
+#pragma mark - Observer
+////////////////////////////////////////////////////////////////////////
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
+    
+    if ([keyPath isEqualToString:NSStringFromSelector(@selector(contentOffset))]) {
+        //
+    }
+    else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
 }
 
 - (void)setDelegate:(id<PageCateButtonViewDelegate>)delegate {
@@ -200,32 +237,7 @@ selectedIndex = _selectedIndex;
 - (void)setUnderLineStyle:(PageCateButtonViewUnderLineStyle)underLineStyle {
     _underLineStyle = underLineStyle;
     
-    if (underLineStyle == PageCateButtonViewUnderLineStyleNone) {
-        NSIndexSet *indexSet = [self.cateTitleView.subviews indexesOfObjectsPassingTest:^BOOL(__kindof UIView * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-            return [obj isKindOfClass:[DefaultUnderLineView class]];
-        }];
-        NSArray *resultArray = [self.cateTitleView.subviews objectsAtIndexes:indexSet];
-        for (DefaultUnderLineView *view in resultArray) {
-            [view removeFromSuperview];
-        }
-        resultArray = nil;
-        _underLineView = nil;
-        return;
-    }
-    
-    // 获取当前选中的buttonItem
-    PageCateButtonItem *selectedItem = [self getCurrentSelectedButtonitem];
-    if (!selectedItem) {
-        return;
-    }
-    [self addSubview:self.underLineView];
-    
-    [self bringSubviewToFront:self.underLineView];
-    self.underLineView.backgroundColor = self.underLineBackgroundColor;
-    
-    if (underLineStyle == PageCateButtonViewUnderLineStyleDefault) {
-        [self updateUpderLinePointForButtonItem:selectedItem];
-    }
+    self.cateTitleContentView.underLineStyle = underLineStyle;
     
 }
 
@@ -238,7 +250,7 @@ selectedIndex = _selectedIndex;
     }
     else if (PageCateButtonViewUnderLineStyleDefault) {
         [self addSubview:self.separatorView];
-        [self insertSubview:_separatorView belowSubview:_underLineView];
+        [self insertSubview:_separatorView belowSubview:_cateTitleView];
     }
 }
 
@@ -278,7 +290,7 @@ selectedIndex = _selectedIndex;
     
     [self selectedButtonItemChange:buttonItem];
     [self setupCenterForButtonItem:buttonItem];
-    [self updateUpderLinePointForButtonItem:buttonItem];
+    [self.cateTitleContentView updateUpderLinePointForButtonItem:buttonItem];
     [self _didSelectedButtonItem:buttonItem];
 }
 
@@ -329,7 +341,7 @@ selectedIndex = _selectedIndex;
 }
 
 - (void)setupCenterForButtonItem:(PageCateButtonItem *)buttonItem {
-    
+    // 自动滚动到中心
     if (!self.automaticCenter) {
         return;
     }
@@ -354,32 +366,7 @@ selectedIndex = _selectedIndex;
     [self.cateTitleView setContentOffset:CGPointMake(offsetX, 0) animated:YES];
 }
 
-- (void)updateUpderLinePointForButtonItem:(PageCateButtonItem *)buttonItem {
-    [self layoutIfNeeded];
-    void (^animationBlock)() = ^{
-        CGRect underLineFrame = self.underLineView.frame;
-        if (self.sizeToFltWhenScreenNotPaved) {
-            underLineFrame.size.width = self.cateTitleContentView.sizeToFltWidth ?: buttonItem.contentWidth;
-        } else {
-            underLineFrame.size.width = buttonItem.contentWidth;
-        }
-        underLineFrame.size.height = _underLineHeight;
-        underLineFrame.origin.y = self.frame.size.height - _underLineHeight;
-        self.underLineView.frame = underLineFrame;
-        CGPoint center = self.underLineView.center;
-        center.x = buttonItem.button.center.x;
-        self.underLineView.center = center;
-    };
-    
-    if (_fristAppearUnderLine) {
-        animationBlock();
-    } else {
-        [UIView animateWithDuration:0.15 animations:animationBlock completion:^(BOOL finished) {
-            _fristAppearUnderLine = NO;
-        }];
-    }
-    
-}
+
 
 
 - (void)scrollButtonFormIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress {
@@ -391,19 +378,34 @@ selectedIndex = _selectedIndex;
     
     if (![self isCanScroll]) {
         if (self.underLineCanScroll) {
+            // 改变按钮的状态
+            if (progress >= 0.8) {
+                /// 此处取 >= 0.8 而不是 1.0 为的是防止用户滚动过快而按钮的选中状态并没有改变
+                [self selectedButtonItemChange:toItem];
+            }
             // cateTitleView 不可以滚动，underLineView 可以滚动
-            [self underLineViewnNotFollowCateTitleViewViewlWithProgress:progress fromButtonItem:fromItem toButtonItem:toItem];
+            [self.cateTitleContentView underLineViewnNotFollowCateTitleViewViewlWithProgress:progress fromButtonItem:fromItem toButtonItem:toItem];
         } else {
+            /// 改变按钮的选择状态
+            if (progress >= 0.5) {
+                [self selectedButtonItemChange:toItem];
+            } else {
+                [self selectedButtonItemChange:fromItem];
+            }
             // cateTitleView 不可以滚动，underLineView 也不可滚动
-            [self underLineViewnNotFollowCateTitleViewViewlWithProgress1:progress fromButtonItem:fromItem toButtonItem:toItem];
+            [self.cateTitleContentView underLineViewnNotFollowCateTitleViewViewlWithProgress1:progress fromButtonItem:fromItem toButtonItem:toItem];
         }
     } else {
         if (self.underLineCanScroll) {
+            /// 改变按钮的选择状态
+            if (progress >= 0.8) {
+                [self selectedButtonItemChange:toItem];
+            }
             // cateTitleView 可以滚动，underLineView 随着滚动
-            [self underLineViewFollowCateTitleViewViewlWithProgress:progress fromButtonItem:fromItem toButtonItem:toItem];
+            [self.cateTitleContentView underLineViewFollowCateTitleViewViewlWithProgress:progress fromButtonItem:fromItem toButtonItem:toItem];
         } else {
             // cateTitleView 可以滚动，但是underLineView 不随着滚动
-            [self underLineViewnNotFollowCateTitleViewViewlWithProgress1:progress fromButtonItem:fromItem toButtonItem:toItem];
+            [self.cateTitleContentView underLineViewnNotFollowCateTitleViewViewlWithProgress1:progress fromButtonItem:fromItem toButtonItem:toItem];
         }
     }
     
@@ -416,61 +418,6 @@ selectedIndex = _selectedIndex;
     }
 }
 
-////////////////////////////////////////////////////////////////////////
-#pragma mark - underLineView 滚动
-////////////////////////////////////////////////////////////////////////
-
-// cateTitleView 不可以滚动，underLineView 可以滚动
-- (void)underLineViewnNotFollowCateTitleViewViewlWithProgress:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem {
-    // 改变按钮的状态
-    if (progress >= 0.8) {
-        /// 此处取 >= 0.8 而不是 1.0 为的是防止用户滚动过快而按钮的选中状态并没有改变
-        [self selectedButtonItemChange:toItem];
-    }
-    
-    if (self.underLineStyle == PageCateButtonViewUnderLineStyleDefault) {
-        
-        CGFloat moveTotalX = toItem.button.frame.origin.x - fromItem.button.frame.origin.x;
-        CGFloat moveX = moveTotalX * progress;
-        CGPoint center = self.underLineView.center;
-        center.x = fromItem.button.center.x + moveX;
-        self.underLineView.center = center;
-    }
-}
-
-/// under line view 不跟随 cateTitleView滚动而滚动
-- (void)underLineViewnNotFollowCateTitleViewViewlWithProgress1:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem {
-    if (progress >= 0.5) {
-        [self updateUpderLinePointForButtonItem:toItem];
-        [self selectedButtonItemChange:toItem];
-    } else {
-        [self updateUpderLinePointForButtonItem:fromItem];
-        [self selectedButtonItemChange:fromItem];
-    }
-}
-
-// cateTitleView 可以滚动，underLineView 随着滚动
-- (void)underLineViewFollowCateTitleViewViewlWithProgress:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem {
-    /// 改变按钮的选择状态
-    if (progress >= 0.8) {
-        [self selectedButtonItemChange:toItem];
-    }
-    
-    /// 计算 toItem／fromItem 之间的距离
-    CGFloat totalOffsetX = toItem.button.frame.origin.x - fromItem.button.frame.origin.x;
-    /// 计算 toItem／fromItem 宽度的差值
-    CGFloat totalDistance = CGRectGetMaxX(toItem.button.frame) - CGRectGetMaxX(fromItem.button.frame);
-    /// 计算 underLineView 滚动时 X 的偏移量
-    CGFloat offsetX;
-    /// 计算 underLineView 滚动时宽度的偏移量
-    offsetX = totalOffsetX * progress;
-    CGFloat distance = progress * (totalDistance - totalOffsetX);
-    /// 计算 underLineView 新的 frame
-    CGRect underLineFrame = self.underLineView.frame;
-    underLineFrame.origin.x = fromItem.button.frame.origin.x + offsetX;
-    underLineFrame.size.width = fromItem.button.frame.size.width + distance;
-    self.underLineView.frame = underLineFrame;
-}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -478,12 +425,10 @@ selectedIndex = _selectedIndex;
 ////////////////////////////////////////////////////////////////////////
 
 - (void)setUnderLineHeight:(CGFloat)underLineHeight {
+    
     _underLineHeight = underLineHeight;
     
-    CGRect frame = self.underLineView.frame;
-    frame.size.height = underLineHeight;
-    frame.origin.y = self.frame.size.height - underLineHeight;
-    self.underLineView.frame = frame;
+    self.cateTitleContentView.underLineHeight = underLineHeight;
     
 }
 
@@ -498,11 +443,7 @@ selectedIndex = _selectedIndex;
 - (void)setUnderLineImage:(UIImage *)underLineImage {
     _underLineImage = underLineImage;
     
-    if (_underLineImage) {
-        _underLineBackgroundColor = [UIColor clearColor];
-        self.underLineView.backgroundColor = [UIColor clearColor];
-        self.underLineView.image = underLineImage;
-    }
+    self.cateTitleContentView.underLineImage = underLineImage;
 }
 
 - (UIColor *)underLineBackgroundColor {
@@ -513,11 +454,7 @@ selectedIndex = _selectedIndex;
 
 - (void)setUnderLineBackgroundColor:(UIColor *)underLineBackgroundColor {
     _underLineBackgroundColor = underLineBackgroundColor;
-    if (underLineBackgroundColor) {
-        self.underLineView.image = [UIImage new];
-        _underLineImage = [UIImage new];
-        self.underLineView.backgroundColor = underLineBackgroundColor;
-    }
+    self.cateTitleContentView.underLineBackgroundColor = underLineBackgroundColor;
 }
 
 - (void)setSeparatorBackgroundColor:(UIColor *)separatorBackgroundColor {
@@ -549,12 +486,6 @@ selectedIndex = _selectedIndex;
     return nil;
 }
 
-- (PageCateButtonItem *)getCurrentSelectedButtonitem {
-    
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSelected == YES"] ;
-    NSArray *selectedItems = [self.buttonItems filteredArrayUsingPredicate:predicate];
-    return selectedItems.firstObject;
-}
 
 - (void)layoutSubviews {
     [super layoutSubviews];
@@ -730,14 +661,7 @@ selectedIndex = _selectedIndex;
     }
     return _cateTitleView;
 }
-- (DefaultUnderLineView *)underLineView {
-    if (!_underLineView) {
-        _underLineView = [[DefaultUnderLineView alloc] init];
-        _underLineView.backgroundColor = [UIColor redColor];
-        _underLineView.translatesAutoresizingMaskIntoConstraints = NO;
-    }
-    return _underLineView;
-}
+
 
 - (UIView *)cateTitleContentView {
     if (!_cateTitleContentView) {
@@ -932,6 +856,16 @@ selectedIndex = _selectedIndex;
 
 @implementation CateButtonContentView
 
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        _fristAppearUnderLine = YES;
+        _underLineBackgroundColor = [UIColor redColor];
+    }
+    return self;
+}
+
 - (void)setButtonItems:(NSArray<PageCateButtonItem *> *)buttonItems {
     _buttonItems = buttonItems;
     
@@ -1000,5 +934,157 @@ selectedIndex = _selectedIndex;
     }
     
 }
+
+////////////////////////////////////////////////////////////////////////
+#pragma mark - underLineView 滚动
+////////////////////////////////////////////////////////////////////////
+
+// cateTitleView 不可以滚动，underLineView 可以滚动
+- (void)underLineViewnNotFollowCateTitleViewViewlWithProgress:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem {
+    
+    
+    if (self.underLineStyle == PageCateButtonViewUnderLineStyleDefault) {
+        
+        CGFloat moveTotalX = toItem.button.frame.origin.x - fromItem.button.frame.origin.x;
+        CGFloat moveX = moveTotalX * progress;
+        CGPoint center = self.underLineView.center;
+        center.x = fromItem.button.center.x + moveX;
+        self.underLineView.center = center;
+    }
+}
+
+/// under line view 不跟随 cateTitleView滚动而滚动
+- (void)underLineViewnNotFollowCateTitleViewViewlWithProgress1:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem {
+    if (progress >= 0.5) {
+        [self updateUpderLinePointForButtonItem:toItem];
+    } else {
+        [self updateUpderLinePointForButtonItem:fromItem];
+    }
+}
+
+// cateTitleView 可以滚动，underLineView 随着滚动
+- (void)underLineViewFollowCateTitleViewViewlWithProgress:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem {
+    
+    /// 计算 toItem／fromItem 之间的距离
+    CGFloat totalOffsetX = toItem.button.frame.origin.x - fromItem.button.frame.origin.x;
+    /// 计算 toItem／fromItem 宽度的差值
+    CGFloat totalDistance = CGRectGetMaxX(toItem.button.frame) - CGRectGetMaxX(fromItem.button.frame);
+    /// 计算 underLineView 滚动时 X 的偏移量
+    CGFloat offsetX = totalOffsetX * progress;
+    /// 计算 underLineView 滚动时宽度的偏移量
+    CGFloat distance = progress * (totalDistance - totalOffsetX);
+    /// 计算 underLineView 新的 frame
+    CGRect underLineFrame = self.underLineView.frame;
+    underLineFrame.origin.x = fromItem.button.frame.origin.x + offsetX;
+    underLineFrame.size.width = fromItem.button.frame.size.width + distance;
+    self.underLineView.frame = underLineFrame;
+}
+
+- (void)setUnderLineStyle:(PageCateButtonViewUnderLineStyle)underLineStyle {
+    _underLineStyle = underLineStyle;
+    
+    if (underLineStyle == PageCateButtonViewUnderLineStyleNone) {
+        NSIndexSet *indexSet = [self.subviews indexesOfObjectsPassingTest:^BOOL(__kindof UIView * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            return [obj isKindOfClass:[DefaultUnderLineView class]];
+        }];
+        NSArray *resultArray = [self.subviews objectsAtIndexes:indexSet];
+        for (DefaultUnderLineView *view in resultArray) {
+            [view removeFromSuperview];
+        }
+        resultArray = nil;
+        _underLineView = nil;
+        return;
+    }
+    
+    // 获取当前选中的buttonItem
+    PageCateButtonItem *selectedItem = [self getCurrentSelectedButtonitem];
+    if (!selectedItem) {
+        return;
+    }
+    [self addSubview:self.underLineView];
+    
+    [self bringSubviewToFront:self.underLineView];
+    self.underLineView.backgroundColor = self.underLineBackgroundColor;
+    
+    if (underLineStyle == PageCateButtonViewUnderLineStyleDefault) {
+        [self updateUpderLinePointForButtonItem:selectedItem];
+    }
+    
+}
+
+- (void)updateUpderLinePointForButtonItem:(PageCateButtonItem *)buttonItem {
+    [self layoutIfNeeded];
+    void (^animationBlock)() = ^{
+        CGRect underLineFrame = self.underLineView.frame;
+        if (self.sizeToFltWhenScreenNotPaved) {
+            underLineFrame.size.width = self.sizeToFltWidth ?: buttonItem.contentWidth;
+        } else {
+            underLineFrame.size.width = buttonItem.contentWidth;
+        }
+        underLineFrame.size.height = _underLineHeight;
+        underLineFrame.origin.y = self.frame.size.height - _underLineHeight;
+        self.underLineView.frame = underLineFrame;
+        CGPoint center = self.underLineView.center;
+        center.x = buttonItem.button.center.x;
+        self.underLineView.center = center;
+    };
+    
+    if (_fristAppearUnderLine) {
+        animationBlock();
+    } else {
+        [UIView animateWithDuration:0.15 animations:animationBlock completion:^(BOOL finished) {
+            _fristAppearUnderLine = NO;
+        }];
+    }
+    
+}
+
+- (DefaultUnderLineView *)underLineView {
+    if (!_underLineView) {
+        _underLineView = [[DefaultUnderLineView alloc] init];
+        _underLineView.backgroundColor = [UIColor redColor];
+        _underLineView.translatesAutoresizingMaskIntoConstraints = NO;
+    }
+    return _underLineView;
+}
+
+- (PageCateButtonItem *)getCurrentSelectedButtonitem {
+    
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSelected == YES"] ;
+    NSArray *selectedItems = [self.buttonItems filteredArrayUsingPredicate:predicate];
+    return selectedItems.firstObject;
+}
+
+- (void)setUnderLineBackgroundColor:(UIColor *)underLineBackgroundColor {
+    _underLineBackgroundColor = underLineBackgroundColor;
+    if (underLineBackgroundColor) {
+        self.underLineView.image = [UIImage new];
+        _underLineImage = [UIImage new];
+        self.underLineView.backgroundColor = underLineBackgroundColor;
+    }
+}
+
+- (void)setUnderLineImage:(UIImage *)underLineImage {
+    _underLineImage = underLineImage;
+    
+    if (_underLineImage) {
+        _underLineBackgroundColor = [UIColor clearColor];
+        self.underLineView.backgroundColor = [UIColor clearColor];
+        self.underLineView.image = underLineImage;
+    }
+}
+
+- (void)setUnderLineHeight:(CGFloat)underLineHeight {
+    
+    _underLineHeight = underLineHeight;
+    
+    CGRect frame = self.underLineView.frame;
+    frame.size.height = underLineHeight;
+    frame.origin.y = self.frame.size.height - underLineHeight;
+    self.underLineView.frame = frame;
+    
+}
+
+
 
 @end

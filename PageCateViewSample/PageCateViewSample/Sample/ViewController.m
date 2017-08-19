@@ -42,6 +42,8 @@
   
 }
 
+static const NSInteger count = 12;
+
 
 - (void)setupPageView {
     
@@ -60,7 +62,7 @@
         Sample1TableViewController *vc = [[Sample1TableViewController alloc] init];
         [vcs addObject:vc];
         i++;
-    } while (i < 3);
+    } while (i < count);
     self.pageContentView.childViewControllers = vcs;
     
     self.cateButtonView.selectedIndex = 1;
@@ -91,12 +93,13 @@
             [buttonItem setImage:[UIImage imageNamed:imageName] forState:UIControlStateNormal];
             [buttonItems addObject:buttonItem];
             i++;
-        } while (i < 3);
+        } while (i < count);
         _cateButtonView = [[PageCateButtonView alloc] init];
         [self.view addSubview:_cateButtonView];
         _cateButtonView.buttonItems = buttonItems;
         _cateButtonView.underLineCanScroll = YES;
-        _cateButtonView.separatorHeight = 5.0;
+        _cateButtonView.separatorHeight = 2.0;
+        _cateButtonView.underLineHeight = 3.0;
         PageCateButtonItem *item = [PageCateButtonItem new];
         NSString *title = @"right";
         [item setTitle:title forState:UIControlStateNormal];
