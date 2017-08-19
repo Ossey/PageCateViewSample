@@ -184,9 +184,9 @@
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    //    if (self.triggerScrollTarget == self.cateButtonView) {
-    //        return;
-    //    }
+        if (self.triggerScrollTarget == self.cateButtonView) {
+            return;
+        }
     
     [self __scrolling];
 }

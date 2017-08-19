@@ -114,11 +114,9 @@ selectedIndex = _selectedIndex;
 - (void)__setup {
     
     _buttonMargin = 0.0;
-    _underLineHeight = 1.0;
     _separatorHeight = 1.0;
     _automaticCenter = YES;
     _separatorBackgroundColor = [UIColor blueColor];
-    _sizeToFltWhenScreenNotPaved = YES;
     _underLineStyle = PageCateButtonViewUnderLineStyleDefault;
     _separatorStyle = PageCateButtonViewSeparatorStyleDefault;
     [self addSubview:self.cateTitleView];
@@ -128,6 +126,7 @@ selectedIndex = _selectedIndex;
                          forKeyPath:NSStringFromSelector(@selector(contentOffset))
                             options:NSKeyValueObservingOptionNew
                             context:NULL];
+    
     
 }
 
@@ -161,10 +160,7 @@ selectedIndex = _selectedIndex;
 }
 
 - (void)setSizeToFltWhenScreenNotPaved:(BOOL)sizeToFltWhenScreenNotPaved {
-    if (_sizeToFltWhenScreenNotPaved == sizeToFltWhenScreenNotPaved) {
-        return;
-    }
-    _sizeToFltWhenScreenNotPaved = sizeToFltWhenScreenNotPaved;
+    
     self.cateTitleContentView.sizeToFltWhenScreenNotPaved = sizeToFltWhenScreenNotPaved;
     [self reloadSubviews];
 }
@@ -211,6 +207,10 @@ selectedIndex = _selectedIndex;
     
     [self setupConstraints];
     
+    [UIView performWithoutAnimation:^{
+        [self layoutIfNeeded];
+    }];
+    
     self.cateTitleContentView.scrollViewContentWidth = 0;
     for (NSInteger i = 0; i < self.buttonItems.count; ++i) {
         PageCateButtonItem *buttonItem = self.buttonItems[i];
@@ -218,13 +218,15 @@ selectedIndex = _selectedIndex;
     }
     
     self.cateTitleContentView.scrollViewContentWidth = _buttonMargin * (self.buttonItems.count + 1) + self.cateTitleContentView.scrollViewContentWidth;
+    CGFloat contentViewWidth = self.cateTitleView.frame.size.width ?: self.rightItem.button ? CGRectGetWidth([UIScreen mainScreen].bounds) - self.rightItem.contentWidth : CGRectGetWidth([UIScreen mainScreen].bounds);
     self.cateTitleContentView.scrollViewContentWidth = ceil(self.cateTitleContentView.scrollViewContentWidth);
     if (![self isCanScroll] && self.sizeToFltWhenScreenNotPaved) {
-        self.cateTitleContentView.sizeToFltWidth = (self.cateTitleView.frame.size.width - (self.buttonItems.count - 1)*_buttonMargin) / self.buttonItems.count;
+        self.cateTitleContentView.sizeToFltWidth = (contentViewWidth - (self.buttonItems.count - 1)*_buttonMargin) / self.buttonItems.count;
     } else {
         self.cateTitleContentView.sizeToFltWidth = 0;
     }
     
+    self.cateTitleContentView.isCanScroll = [self isCanScroll];
     self.cateTitleContentView.buttonItems = self.buttonItems;
     
     
@@ -485,10 +487,13 @@ selectedIndex = _selectedIndex;
     return nil;
 }
 
+- (BOOL)sizeToFltWhenScreenNotPaved {
+    return self.cateTitleContentView.sizeToFltWhenScreenNotPaved;
+}
+
 
 - (void)layoutSubviews {
     [super layoutSubviews];
-    
     
 }
 
@@ -635,7 +640,6 @@ selectedIndex = _selectedIndex;
     cateTitleContentViewHeight.priority = UILayoutPriorityDefaultHigh;
     [self.cateTitleView addConstraint:cateTitleContentViewHeight];
 
-    [self setNeedsLayout];
 }
 
 - (BOOL)canDisplaySeparatorView {
@@ -655,7 +659,6 @@ selectedIndex = _selectedIndex;
         scrollView.showsHorizontalScrollIndicator = NO;
         scrollView.showsVerticalScrollIndicator = NO;
         _cateTitleView = scrollView;
-        //        _cateTitleView.frame = CGRectMake(0, 0, CGRectGetWidth(self.frame) - self.rightItem.contentWidth, CGRectGetHeight(self.frame));
         scrollView.translatesAutoresizingMaskIntoConstraints = NO;
     }
     return _cateTitleView;
@@ -685,10 +688,11 @@ selectedIndex = _selectedIndex;
 
 
 - (BOOL)isCanScroll {
+    CGFloat contentWidth = CGRectGetWidth(self.frame) ?: CGRectGetWidth([UIScreen mainScreen].bounds);
     if (self.rightItem.button) {
-        return self.cateTitleContentView.scrollViewContentWidth > self.bounds.size.width - self.rightItem.contentWidth;
+        return self.cateTitleContentView.scrollViewContentWidth >= contentWidth - self.rightItem.contentWidth;
     }
-    return self.cateTitleContentView.scrollViewContentWidth > self.bounds.size.width;
+    return self.cateTitleContentView.scrollViewContentWidth >= contentWidth;
 }
 
 @end
@@ -861,6 +865,8 @@ selectedIndex = _selectedIndex;
     if (self) {
         _fristAppearUnderLine = YES;
         _underLineBackgroundColor = [UIColor redColor];
+        _sizeToFltWhenScreenNotPaved = YES;
+         _underLineHeight = 1.0;
     }
     return self;
 }
@@ -1030,8 +1036,9 @@ selectedIndex = _selectedIndex;
     
     if (_fristAppearUnderLine) {
         animationBlock();
+        _fristAppearUnderLine = NO;
     } else {
-        [UIView animateWithDuration:0.15 animations:animationBlock completion:^(BOOL finished) {
+        [UIView animateWithDuration:0.2 animations:animationBlock completion:^(BOOL finished) {
             _fristAppearUnderLine = NO;
         }];
     }
@@ -1083,7 +1090,5 @@ selectedIndex = _selectedIndex;
     self.underLineView.frame = frame;
     
 }
-
-
 
 @end

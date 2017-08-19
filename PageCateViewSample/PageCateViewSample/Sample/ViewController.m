@@ -42,7 +42,7 @@
   
 }
 
-static const NSInteger count = 12;
+static const NSInteger count = 20;
 
 
 - (void)setupPageView {
@@ -87,7 +87,13 @@ static const NSInteger count = 12;
         do {
             PageCateButtonItem *buttonItem = [PageCateButtonItem new];
             buttonItem.contentWidth = 60;
-            NSString *title = [NSString stringWithFormat:@"list%ld", i];
+            NSString *title = nil;
+            if (i <= 12) {
+                title = [NSString stringWithFormat:@"list%ld", i];
+            }
+            else {
+               title = [NSString stringWithFormat:@"list%ld", i+10000];
+            }
             [buttonItem setTitle:title forState:UIControlStateNormal];
             NSString *imageName = [NSString stringWithFormat:@"trip_sharing_%ld_publish_selected", i+1];
             [buttonItem setImage:[UIImage imageNamed:imageName] forState:UIControlStateNormal];
@@ -100,6 +106,7 @@ static const NSInteger count = 12;
         _cateButtonView.underLineCanScroll = YES;
         _cateButtonView.separatorHeight = 2.0;
         _cateButtonView.underLineHeight = 3.0;
+        _cateButtonView.sizeToFltWhenScreenNotPaved = YES;
         PageCateButtonItem *item = [PageCateButtonItem new];
         NSString *title = @"right";
         [item setTitle:title forState:UIControlStateNormal];
