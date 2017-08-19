@@ -123,7 +123,7 @@ selectedIndex = _selectedIndex;
         return;
     }
     _sizeToFltWhenScreenNotPaved = sizeToFltWhenScreenNotPaved;
-    
+    self.cateTitleContentView.sizeToFltWhenScreenNotPaved = sizeToFltWhenScreenNotPaved;
     [self reloadSubviews];
 }
 
