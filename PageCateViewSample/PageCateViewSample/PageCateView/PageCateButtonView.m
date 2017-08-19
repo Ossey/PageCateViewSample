@@ -914,11 +914,12 @@ selectedIndex = _selectedIndex;
     NSMutableArray<NSString *> *subviewKeyArray = [NSMutableArray arrayWithCapacity:0];
     NSMutableDictionary *subviewDict = [NSMutableDictionary dictionaryWithCapacity:0];
     NSMutableDictionary *metrics = @{@"leftMargin": @(self.buttonMargin), @"sizeToFltWidth": @(self.sizeToFltWidth)}.mutableCopy;
+    NSMutableString *verticalFormat = [NSMutableString new];
     
     for (NSInteger i = 0; i < self.buttonItems.count; i++) {
         PageCateButtonItem *buttonItem = self.buttonItems[i];
         buttonItem.index = i;
-    
+        
         buttonItem.buttonItemClickBlock = ^(PageCateButtonItem *item) {
             UIView *superView = self.superview;
             do {
@@ -937,16 +938,14 @@ selectedIndex = _selectedIndex;
         [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:[NSString stringWithFormat:@"V:|[%@(>=0)]|", subviewKeyArray[i]] options:kNilOptions metrics:metrics views:subviewDict]];
         
         // 设置水平之间的约束
-        NSMutableString *verticalFormat = [NSMutableString new];
-        
         CGFloat leftMargin = self.buttonMargin;
         
         void (^verticalFormatBlock)(NSString *widthKey) = ^(NSString *widthKey){
             if (i == self.buttonItems.count - 1) {
-                [verticalFormat appendFormat:@"-(%.f@750)-[%@(>=%@)]-(%.f@750)-", leftMargin, subviewKeyArray[i], widthKey, leftMargin];
+                [verticalFormat appendFormat:@"-(%.f@750)-[%@(%@)]-(%.f@750)-", leftMargin, subviewKeyArray[i], widthKey, leftMargin];
             }
             else {
-                [verticalFormat appendFormat:@"-(%.f@750)-[%@(>=%@)]", leftMargin, subviewKeyArray[i], widthKey];
+                [verticalFormat appendFormat:@"-(%.f@750)-[%@(%@)]", leftMargin, subviewKeyArray[i], widthKey];
             }
         };
         
@@ -961,94 +960,11 @@ selectedIndex = _selectedIndex;
         }
         
         
-        
-        
-//        if (![self isCanScroll] && self.sizeToFltWhenScreenNotPaved) {
-//            
-//            if (!_lastButton) {
-//                // 只有一个按钮
-//                if (i == self.buttonItems.count - 1) {
-//                    
-//                    [verticalFormat appendFormat:@"-(%.f(@750))-[%@]-(%.f(@750))-", leftMargin, @"button", leftMargin];
-//                    
-//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-//                        make.left.top.equalTo(self.cateTitleContentView);
-//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-//                        make.width.mas_equalTo(_sizeToFltWidth);
-//                        make.right.equalTo(self.cateTitleContentView);
-//                    }];
-//                } else {
-//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-//                        make.left.top.equalTo(self.cateTitleContentView);
-//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-//                        make.width.mas_equalTo(_sizeToFltWidth);
-//                    }];
-//                    
-//                }
-//                
-//            }
-//            else {
-//                if (i == self.buttonItems.count - 1) {
-//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-//                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
-//                        make.top.equalTo(_lastButton);
-//                        make.right.equalTo(self.cateTitleContentView);
-//                        make.width.mas_equalTo(_lastButton);
-//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-//                    }];
-//                    
-//                } else {
-//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-//                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
-//                        make.top.equalTo(_lastButton);
-//                        make.width.mas_equalTo(_lastButton);
-//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-//                    }];
-//                }
-//            }
-//            _lastButton = buttonItem.button;
-//            MASAttachKeys(buttonItem.button);
-//        } else {
-//            if (!_lastButton) {
-//                [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-//                    make.left.top.equalTo(self.cateTitleContentView);
-//                    make.width.mas_equalTo(buttonItem.contentWidth);
-//                    make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-//                }];
-//            }
-//            else {
-//                if (i == self.buttonItems.count - 1) {
-//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-//                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
-//                        make.top.equalTo(_lastButton);
-//                        make.right.equalTo(self.cateTitleContentView);
-//                        make.width.mas_equalTo(buttonItem.contentWidth);
-//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-//                    }];
-//                    
-//                } else {
-//                    [buttonItem.button mas_updateConstraints:^(MASConstraintMaker *make) {
-//                        make.left.equalTo(_lastButton.mas_right).mas_offset(self.buttonMargin);
-//                        make.top.equalTo(_lastButton);
-//                        make.width.mas_equalTo(buttonItem.contentWidth);
-//                        make.bottom.mas_equalTo(self.cateTitleContentView).mas_offset(-self.separatorHeight).priorityHigh();
-//                    }];
-//                }
-//            }
-//            
-//            _lastButton = buttonItem.button;
-//            MASAttachKeys(buttonItem.button);
-//        }
-        
-        if (verticalFormat.length) {
-            [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:[NSString stringWithFormat:@"|%@|", verticalFormat] options:kNilOptions metrics:metrics views:subviewDict]];
-        }
-        
     }
     
-//    _lastButton = nil;
-    
-    
+    if (verticalFormat.length) {
+        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:[NSString stringWithFormat:@"|%@|", verticalFormat] options:kNilOptions metrics:metrics views:subviewDict]];
+    }
     
 }
 
