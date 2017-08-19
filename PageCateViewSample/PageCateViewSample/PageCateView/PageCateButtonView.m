@@ -128,6 +128,7 @@ selectedIndex = _selectedIndex;
                          forKeyPath:NSStringFromSelector(@selector(contentOffset))
                             options:NSKeyValueObservingOptionNew
                             context:NULL];
+    
 }
 
 - (void)dealloc {
@@ -277,8 +278,10 @@ selectedIndex = _selectedIndex;
 }
 
 - (NSInteger)selectedIndex {
-    
-    return  _selectedIndex == 0 || _selectedIndex > self.buttonItems.count ? self.previousSelectedBtnItem.index : _selectedIndex;
+    if (_selectedIndex == 0 || _selectedIndex > self.buttonItems.count) {
+        _selectedIndex = self.previousSelectedBtnItem.index;
+    }
+    return _selectedIndex;
 }
 
 
@@ -306,6 +309,7 @@ selectedIndex = _selectedIndex;
 ////////////////////////////////////////////////////////////////////////
 
 - (void)_didSelectedButtonItem:(PageCateButtonItem *)buttonItem {
+    _selectedIndex = buttonItem.index;
     if (self.delegate && [self.delegate respondsToSelector:@selector(pageCateButtonView:didSelectedAtIndex:)]) {
         [self.delegate pageCateButtonView:self didSelectedAtIndex:buttonItem.index];
     }
@@ -346,22 +350,17 @@ selectedIndex = _selectedIndex;
         return;
     }
     
-    if (self.cateTitleContentView.scrollViewContentWidth <= self.frame.size.width) {
+    if (self.cateTitleContentView.scrollViewContentWidth <= self.cateTitleView.frame.size.width) {
         return;
     }
     
     // 本质：移动标题滚动视图的偏移量
     // 计算当选择的标题按钮的中心点x在屏幕屏幕中心点时，标题滚动视图的x轴的偏移量
     CGFloat offsetX = buttonItem.button.center.x - CGRectGetWidth(self.cateTitleView.frame) * 0.5;
-    if (offsetX < 0) {
-        offsetX = 0;
-    }
+    offsetX = MAX(0, offsetX);
     
     CGFloat maxOffsetX = self.cateTitleView.contentSize.width - CGRectGetWidth(self.cateTitleView.frame);
-    
-    if (offsetX > maxOffsetX) {
-        offsetX = maxOffsetX;
-    }
+    offsetX = MIN(offsetX, maxOffsetX);
     
     [self.cateTitleView setContentOffset:CGPointMake(offsetX, 0) animated:YES];
 }

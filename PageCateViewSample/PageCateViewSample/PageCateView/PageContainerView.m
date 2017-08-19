@@ -28,6 +28,7 @@
 
 /** 触发页面滚动的对象：PageContainerView 或 PageCateButtonItem */
 @property (nonatomic, weak) id triggerScrollTarget;
+@property (nonatomic, assign) NSInteger currentIndex;
 
 
 @end
@@ -118,6 +119,11 @@
     [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[collectionView]|"
                                                                  options:kNilOptions metrics:nil
                                                                    views:viewDict]];
+    
+//    __weak typeof(self) weakSelf = self;
+//    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillChangeStatusBarFrameNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+////        [weakSelf scrollToIndex:weakSelf.currentIndex];
+//    }];
 }
 
 
@@ -228,6 +234,7 @@
         [self.delegate pageContainerView:self didScrollFromIndex:fromIndex toIndex:toIndex progress:progress];
     }
     [self.cateButtonView scrollButtonFormIndex:fromIndex toIndex:toIndex progress:progress];
+    self.currentIndex = toIndex;
 }
 
 - (NSInteger)totalChanelCount {
@@ -237,9 +244,10 @@
     return self.childViewControllers.count;
 }
 - (void)scrollToIndex:(NSInteger)toIndex {
+    self.currentIndex = toIndex;
     [self layoutIfNeeded];
     CGFloat offsetX = toIndex * MAX(self.collectionView.frame.size.width, [UIScreen mainScreen].bounds.size.width);
-    [self.collectionView setContentOffset:CGPointMake(offsetX, 0) animated:NO];
+    [self.collectionView setContentOffset:CGPointMake(offsetX, 0) animated:YES];
     
 }
 
