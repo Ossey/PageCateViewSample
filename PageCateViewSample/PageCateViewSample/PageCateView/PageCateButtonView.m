@@ -160,7 +160,9 @@ selectedIndex = _selectedIndex;
 }
 
 - (void)setSizeToFltWhenScreenNotPaved:(BOOL)sizeToFltWhenScreenNotPaved {
-    
+    if ([self isCanScroll]) {
+        return;
+    }
     self.cateTitleContentView.sizeToFltWhenScreenNotPaved = sizeToFltWhenScreenNotPaved;
     [self reloadSubviews];
 }
@@ -746,7 +748,7 @@ selectedIndex = _selectedIndex;
 
 - (CGFloat)contentWidth {
     if (_contentWidth <= 0) {
-        
+    
         NSString *currentText = self.button.currentTitle;
         UIImage *currentImage = self.button.currentImage;
         _contentWidth = [currentText sizeWithMaxSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:self.textFont].width;

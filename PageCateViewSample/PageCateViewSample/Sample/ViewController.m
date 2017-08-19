@@ -42,7 +42,7 @@
   
 }
 
-static const NSInteger count = 20;
+static const NSInteger count = 8;
 
 
 - (void)setupPageView {
