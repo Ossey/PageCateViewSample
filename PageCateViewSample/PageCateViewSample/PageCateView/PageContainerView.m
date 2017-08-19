@@ -7,7 +7,6 @@
 //
 
 #import "PageContainerView.h"
-#import "Masonry.h"
 
 @interface PageContainerViewFlowLayout : UICollectionViewFlowLayout
 
@@ -102,6 +101,8 @@
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
         [_collectionView registerClass:[PageContainerViewCell class] forCellWithReuseIdentifier:@"PageContainerView.PageContainerViewCell"];
+        _collectionView.translatesAutoresizingMaskIntoConstraints = NO;
+        
     }
     return _collectionView;
 }
@@ -109,16 +110,16 @@
 - (void)__setup {
     self.startScrollOffset = CGPointZero;
     [self addSubview:self.collectionView];
-    
+    NSDictionary *viewDict = @{@"collectionView": self.collectionView};
+    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|[collectionView]|"
+                                                                 options:kNilOptions
+                                                                 metrics:nil
+                                                                   views:viewDict]];
+    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[collectionView]|"
+                                                                 options:kNilOptions metrics:nil
+                                                                   views:viewDict]];
 }
 
-- (void)layoutSubviews {
-    [super layoutSubviews];
-    
-    [_collectionView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.edges.equalTo(self);
-    }];
-}
 
 - (void)setDelegate:(id<PageContainerViewDelegate>)delegate {
     if (_delegate == delegate) {
@@ -288,13 +289,19 @@
     if (_channelView == channelView) {
         return;
     }
+    [self.contentView removeConstraints:channelView.constraints];
     _channelView = channelView;
     [self.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     if (_channelView) {
+        _channelView.translatesAutoresizingMaskIntoConstraints = NO;
         [self.contentView addSubview:channelView];
-        [_channelView mas_updateConstraints:^(MASConstraintMaker *make) {
-            make.edges.equalTo(self.contentView);
-        }];
+        NSDictionary *viewDict = @{@"channelView": channelView};
+        [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|[channelView]|" options:kNilOptions
+                                                                                 metrics:nil
+                                                                                   views:viewDict]];
+        [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[channelView]|"
+                                                                                 options:kNilOptions metrics:nil
+                                                                                   views:viewDict]];
     }
     
 }
