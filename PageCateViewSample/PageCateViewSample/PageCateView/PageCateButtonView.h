@@ -10,9 +10,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-typedef NS_ENUM(NSInteger, PageCateButtonViewUnderLineStyle) {
-    PageCateButtonViewUnderLineStyleNone,
-    PageCateButtonViewUnderLineStyleDefault
+typedef NS_ENUM(NSInteger, PageCateButtonViewIndicatoStyle) {
+    PageCateButtonViewIndicatoStyleNone,
+    PageCateButtonViewIndicatoStyleDefault
 };
 
 typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
@@ -40,18 +40,19 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 @property (nonatomic, strong, readonly) PageCateButtonItem *rightItem;
 @property (nonatomic, assign) CGFloat buttonMargin;
 @property (nonatomic, assign) UIColor *currentItemBackGroundColor;
-@property (nonatomic, strong) UIColor *underLineBackgroundColor;
-@property (nonatomic, assign) CGFloat underLineHeight;
+@property (nonatomic, strong) UIColor *indicatoBackgroundColor;
+@property (nonatomic, assign) CGFloat indicatoHeight;
 @property (nonatomic, assign) CGFloat separatorHeight;
-@property (nonatomic, strong) UIImage *underLineImage;
+@property (nonatomic, strong) UIImage *indicatoImage;
 @property (nonatomic, strong) UIImage *separatorImage;
 @property (nonatomic, strong) UIColor *separatorBackgroundColor;
 @property (nonatomic, assign) BOOL automaticCenter;
-@property (nonatomic, assign) PageCateButtonViewUnderLineStyle underLineStyle;
+@property (nonatomic, assign) PageCateButtonViewIndicatoStyle indicatoStyle;
 @property (nonatomic, assign) PageCateButtonViewSeparatorStyle separatorStyle;
 @property (nonatomic, assign) NSInteger selectedIndex;
 @property (nonatomic, assign) BOOL bounces;
-@property (nonatomic, assign) BOOL underLineCanScroll;
+/** 控制指示器是否跟随滚动的动画 */
+@property (nonatomic, assign) BOOL indicatoScrollAnimated;
 /** 当buttonItem总共未占满一屏幕时，是否自适应buttonItem的宽度，让其铺满屏幕 */
 @property (nonatomic, assign) BOOL sizeToFltWhenScreenNotPaved;
 

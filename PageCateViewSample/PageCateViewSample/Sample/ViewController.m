@@ -113,9 +113,9 @@ static const NSInteger count = 8;
     
         _cateButtonView = [[PageCateButtonView alloc] init];
         [self.view addSubview:_cateButtonView];
-        _cateButtonView.underLineCanScroll = YES;
+        _cateButtonView.indicatoScrollAnimated = YES;
         _cateButtonView.separatorHeight = 2.0;
-        _cateButtonView.underLineHeight = 3.0;
+        _cateButtonView.indicatoHeight = 3.0;
         _cateButtonView.sizeToFltWhenScreenNotPaved = YES;
         CGFloat cateButtonViewTop = self.navigationController.isNavigationBarHidden ? 0 : 64;
         [_cateButtonView mas_updateConstraints:^(MASConstraintMaker *make) {
