@@ -99,7 +99,7 @@ static const NSInteger count = 8;
     NSString *title = @"right";
     [item setTitle:title forState:UIControlStateNormal];
     [item.button setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
-    item.button.backgroundColor = [UIColor colorWithWhite:0.8 alpha:0.2];
+    item.button.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.6];
     return item;
 }
 
@@ -114,8 +114,9 @@ static const NSInteger count = 8;
         _cateButtonView = [[PageCateButtonView alloc] init];
         [self.view addSubview:_cateButtonView];
         _cateButtonView.indicatoScrollAnimated = YES;
-        _cateButtonView.separatorHeight = 2.0;
-        _cateButtonView.indicatoHeight = 3.0;
+        _cateButtonView.separatorHeight = 3.0;
+        _cateButtonView.indicatoHeight = 5.0;
+        _cateButtonView.bounces = YES;
         _cateButtonView.sizeToFltWhenScreenNotPaved = YES;
         CGFloat cateButtonViewTop = self.navigationController.isNavigationBarHidden ? 0 : 64;
         [_cateButtonView mas_updateConstraints:^(MASConstraintMaker *make) {

@@ -22,7 +22,7 @@
 @interface CateButtonContentView : UIView
 
 @property (nonatomic, assign) BOOL isCanScroll;
-@property (nonatomic, assign) CGFloat buttonMargin;
+@property (nonatomic, assign) CGFloat itemHorizontalSpacing;
 @property (nonatomic, assign) BOOL sizeToFltWhenScreenNotPaved;
 @property (nonatomic, strong) NSArray<PageCateButtonItem *> *buttonItems;
 @property (nonatomic, assign) CGFloat sizeToFltWidth;
@@ -34,7 +34,7 @@
 @property (nonatomic, strong) UIImage *indicatoImage;
 @property (nonatomic, assign) CGFloat indicatoHeight;
 @property (nonatomic, assign) BOOL fristAppearIndicato;
-@property (nonatomic, assign) CGFloat buttonBottomMargin;
+@property (nonatomic, assign) CGFloat separatorHeight;
 
 - (PageCateButtonItem *)getCurrentSelectedButtonitem;
 - (void)updateUpderLinePointForButtonItem:(PageCateButtonItem *)buttonItem;
@@ -97,7 +97,7 @@ selectedIndex = _selectedIndex;
 
 - (void)__setup {
     
-    _buttonMargin = 0.0;
+    _itemHorizontalSpacing = 0.0;
     _separatorHeight = 1.0;
     _automaticCenter = YES;
     _separatorBackgroundColor = [UIColor blueColor];
@@ -105,7 +105,7 @@ selectedIndex = _selectedIndex;
     _separatorStyle = PageCateButtonViewSeparatorStyleDefault;
     [self addSubview:self.cateTitleView];
     [self.cateTitleView addSubview:self.cateTitleContentView];
-    
+
     [self.cateTitleView addObserver:self
                          forKeyPath:NSStringFromSelector(@selector(contentOffset))
                             options:NSKeyValueObservingOptionNew
@@ -180,6 +180,9 @@ selectedIndex = _selectedIndex;
     
     [self setupConstraints];
     
+    self.cateTitleContentView.separatorHeight = _separatorHeight;
+    self.cateTitleContentView.indicatoHeight = _indicatoHeight;
+    
     [UIView performWithoutAnimation:^{
         [self layoutIfNeeded];
     }];
@@ -190,11 +193,11 @@ selectedIndex = _selectedIndex;
         self.cateTitleContentView.scrollViewContentWidth += buttonItem.contentWidth;
     }
     
-    self.cateTitleContentView.scrollViewContentWidth = _buttonMargin * (self.buttonItems.count + 1) + self.cateTitleContentView.scrollViewContentWidth;
+    self.cateTitleContentView.scrollViewContentWidth = _itemHorizontalSpacing * (self.buttonItems.count + 1) + self.cateTitleContentView.scrollViewContentWidth;
     CGFloat contentViewWidth = self.cateTitleView.frame.size.width ?: self.rightItem.button ? CGRectGetWidth([UIScreen mainScreen].bounds) - self.rightItem.contentWidth : CGRectGetWidth([UIScreen mainScreen].bounds);
     self.cateTitleContentView.scrollViewContentWidth = ceil(self.cateTitleContentView.scrollViewContentWidth);
     if (![self isCanScroll] && self.sizeToFltWhenScreenNotPaved) {
-        self.cateTitleContentView.sizeToFltWidth = (contentViewWidth - (self.buttonItems.count - 1)*_buttonMargin) / self.buttonItems.count;
+        self.cateTitleContentView.sizeToFltWidth = (contentViewWidth - (self.buttonItems.count - 1)*_itemHorizontalSpacing) / self.buttonItems.count;
     } else {
         self.cateTitleContentView.sizeToFltWidth = 0;
     }
@@ -466,6 +469,7 @@ selectedIndex = _selectedIndex;
     _separatorHeight = separatorHeight;
     
     [self setupConstraints];
+    self.cateTitleContentView.separatorHeight = separatorHeight;
 }
 
 - (PageCateButtonItem *)getButtonItemByButton:(UIButton *)button {
@@ -655,6 +659,7 @@ selectedIndex = _selectedIndex;
         scrollView.showsVerticalScrollIndicator = NO;
         _cateTitleView = scrollView;
         scrollView.translatesAutoresizingMaskIntoConstraints = NO;
+        scrollView.clipsToBounds = NO;
     }
     return _cateTitleView;
 }
@@ -861,7 +866,7 @@ selectedIndex = _selectedIndex;
         _fristAppearIndicato = YES;
         _indicatoBackgroundColor = [UIColor redColor];
         _sizeToFltWhenScreenNotPaved = YES;
-         _indicatoHeight = 1.0;
+        _indicatoHeight = 1.0;
     }
     return self;
 }
@@ -879,7 +884,7 @@ selectedIndex = _selectedIndex;
     
     NSMutableArray<NSString *> *subviewKeyArray = [NSMutableArray arrayWithCapacity:0];
     NSMutableDictionary *subviewDict = [NSMutableDictionary dictionaryWithCapacity:0];
-    NSMutableDictionary *metrics = @{@"leftMargin": @(self.buttonMargin), @"sizeToFltWidth": @(self.sizeToFltWidth)}.mutableCopy;
+    NSMutableDictionary *metrics = @{@"leftMargin": @(self.itemHorizontalSpacing), @"sizeToFltWidth": @(self.sizeToFltWidth), @"bottomMargin": @(MAX(3, _indicatoHeight))}.mutableCopy;
     NSMutableString *verticalFormat = [NSMutableString new];
     
     for (NSInteger i = 0; i < self.buttonItems.count; i++) {
@@ -902,10 +907,10 @@ selectedIndex = _selectedIndex;
         subviewDict[subviewKeyArray.lastObject] = buttonItem.button;
         
         // 设置垂直之间的约束
-        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:[NSString stringWithFormat:@"V:|[%@(>=0)]|", subviewKeyArray[i]] options:kNilOptions metrics:metrics views:subviewDict]];
+        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:[NSString stringWithFormat:@"V:|[%@(>=0)]-(bottomMargin@750)-|", subviewKeyArray[i]] options:kNilOptions metrics:metrics views:subviewDict]];
         
         // 设置水平之间的约束
-        CGFloat leftMargin = self.buttonMargin;
+        CGFloat leftMargin = self.itemHorizontalSpacing;
         
         void (^verticalFormatBlock)(NSString *widthKey) = ^(NSString *widthKey){
             if (i == self.buttonItems.count - 1) {
@@ -1017,14 +1022,15 @@ selectedIndex = _selectedIndex;
         [self layoutIfNeeded];
     }];
     void (^animationBlock)() = ^{
+        self.indicatoHeight = _indicatoHeight;
         CGRect indicatoFrame = self.indicatoView.frame;
         if (self.sizeToFltWhenScreenNotPaved) {
-            indicatoFrame.size.width = self.sizeToFltWidth ?: buttonItem.contentWidth;
+            indicatoFrame.size.width = MAX(0, self.sizeToFltWidth ?: buttonItem.contentWidth);
         } else {
-            indicatoFrame.size.width = buttonItem.contentWidth;
+            indicatoFrame.size.width = MAX(0, buttonItem.contentWidth);
         }
-        indicatoFrame.size.height = _indicatoHeight;
-        indicatoFrame.origin.y = self.frame.size.height - _indicatoHeight;
+        indicatoFrame.origin.x = MAX(0, indicatoFrame.origin.x);
+        indicatoFrame.origin.y = MAX(0, indicatoFrame.origin.y);
         self.indicatoView.frame = indicatoFrame;
         CGPoint center = self.indicatoView.center;
         center.x = buttonItem.button.center.x;
@@ -1082,10 +1088,17 @@ selectedIndex = _selectedIndex;
     _indicatoHeight = indicatoHeight;
     
     CGRect frame = self.indicatoView.frame;
-    frame.size.height = indicatoHeight;
-    frame.origin.y = self.frame.size.height - indicatoHeight;
+    frame.size.height = MAX(0, indicatoHeight);
+    frame.size.width = MAX(0, frame.size.width);
+    frame.origin.y = self.frame.size.height - indicatoHeight + _separatorHeight;
+    frame.origin.y = MAX(0, frame.origin.y);
+    frame.origin.x = MAX(0, frame.origin.x);
     self.indicatoView.frame = frame;
     
 }
 
+- (void)setSeparatorHeight:(CGFloat)separatorHeight {
+    _separatorHeight = separatorHeight;
+    [self setIndicatoHeight:_indicatoHeight];
+}
 @end
