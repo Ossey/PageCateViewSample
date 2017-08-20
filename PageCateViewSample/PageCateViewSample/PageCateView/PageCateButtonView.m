@@ -301,7 +301,7 @@ selectedIndex = _selectedIndex;
 }
 
 - (BOOL)canDisplayRightButton {
-    if ((self.rightItem.button.currentImage || self.rightItem.button.currentTitle) && self.rightItem.button.superview) {
+    if (self.rightItem.button && self.rightItem.button.superview) {
         return YES;
     }
     return NO;
@@ -561,7 +561,7 @@ selectedIndex = _selectedIndex;
                                                                      toItem:self
                                                                   attribute:NSLayoutAttributeBottom
                                                                  multiplier:1.0
-                                                                   constant:0.0];
+                                                                   constant:-self.separatorHeight];
         NSLayoutConstraint *right = [NSLayoutConstraint constraintWithItem:self.rightItem.button
                                                                  attribute:NSLayoutAttributeRight
                                                                  relatedBy:NSLayoutRelationEqual
@@ -907,7 +907,7 @@ selectedIndex = _selectedIndex;
         subviewDict[subviewKeyArray.lastObject] = buttonItem.button;
         
         // 设置垂直之间的约束
-        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:[NSString stringWithFormat:@"V:|[%@(>=0)]-(bottomMargin@750)-|", subviewKeyArray[i]] options:kNilOptions metrics:metrics views:subviewDict]];
+        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:[NSString stringWithFormat:@"V:|[%@(>=0)]-(bottomMargin)-|", subviewKeyArray[i]] options:kNilOptions metrics:metrics views:subviewDict]];
         
         // 设置水平之间的约束
         CGFloat leftMargin = self.itemHorizontalSpacing;
