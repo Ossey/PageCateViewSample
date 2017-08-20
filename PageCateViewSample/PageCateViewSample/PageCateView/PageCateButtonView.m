@@ -255,6 +255,14 @@ selectedIndex = _selectedIndex;
     }
 }
 
+- (void)setButtonItemImage:(UIImage *)image forState:(UIControlState)state index:(NSInteger)index {
+    if (index < self.buttonItems.count) {
+        PageCateButtonItem *buttonItem = self.buttonItems[index];
+        [buttonItem setImage:image forState:state];
+        [self setIndicatoStyle:self.indicatoStyle];
+    }
+}
+
 - (NSInteger)selectedIndex {
     if (_selectedIndex == 0 || _selectedIndex > self.buttonItems.count) {
         _selectedIndex = self.previousSelectedBtnItem.index;
@@ -335,12 +343,15 @@ selectedIndex = _selectedIndex;
         self.previousSelectedBtnItem = buttonItem;
     }
     
-    if (self.itemTitleScale > 0) {
+    if (self.itemScale > 0) {
         for (NSInteger i = 0; i < self.buttonItems.count; ++i) {
+            // 先恢复所有按钮的缩放值
             PageCateButtonItem *item = self.buttonItems[i];
             item.button.transform = CGAffineTransformMakeScale(1, 1);
         }
-        buttonItem.button.transform = CGAffineTransformMakeScale(1 + self.itemTitleScale, 1 + self.itemTitleScale);
+        // 当大当前点击的按钮的缩放值
+        buttonItem.button.transform = CGAffineTransformMakeScale(1 + self.itemScale,
+                                                                 1 + self.itemScale);
     }
 }
 
@@ -409,11 +420,13 @@ selectedIndex = _selectedIndex;
     }
     
     
-    if (self.itemTitleScale) {
-        // 左边缩放
-        fromItem.button.transform = CGAffineTransformMakeScale((1 - progress) * self.itemTitleScale + 1, (1 - progress) * self.itemTitleScale + 1);
-        // 右边缩放
-        toItem.button.transform = CGAffineTransformMakeScale(progress * self.itemTitleScale + 1, progress * self.itemTitleScale + 1);
+    if (self.itemScale) {
+        // fromItem缩小
+        fromItem.button.transform = CGAffineTransformMakeScale((1 - progress) * self.itemScale + 1,
+                                                               (1 - progress) * self.itemScale + 1);
+        // toItem放大
+        toItem.button.transform = CGAffineTransformMakeScale(progress * self.itemScale + 1,
+                                                             progress * self.itemScale + 1);
     }
 }
 

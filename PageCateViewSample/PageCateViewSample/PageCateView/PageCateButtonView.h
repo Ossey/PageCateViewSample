@@ -57,11 +57,12 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 @property (nonatomic, assign) BOOL sizeToFltWhenScreenNotPaved;
 
 /** 标题按钮缩放比例, 默认为0, 有效范围0.0~1.0 */
-@property (nonatomic, assign) CGFloat itemTitleScale;
+@property (nonatomic, assign) CGFloat itemScale;
 
 - (instancetype)initWithFrame:(CGRect)frame;
 
 - (void)setButtonItemTitle:(NSString *)title forState:(UIControlState)state index:(NSInteger)index;
+- (void)setButtonItemImage:(UIImage *)image forState:(UIControlState)state index:(NSInteger)index;
 
 - (void)scrollButtonFormIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress;
 

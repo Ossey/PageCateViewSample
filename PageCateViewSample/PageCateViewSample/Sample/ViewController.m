@@ -116,6 +116,7 @@ static const NSInteger count = 8;
         _cateButtonView.indicatoScrollAnimated = YES;
         _cateButtonView.separatorHeight = 3.0;
         _cateButtonView.indicatoHeight = 5.0;
+        _cateButtonView.itemScale = 0.05;
         _cateButtonView.bounces = YES;
         _cateButtonView.sizeToFltWhenScreenNotPaved = YES;
         CGFloat cateButtonViewTop = self.navigationController.isNavigationBarHidden ? 0 : 64;
