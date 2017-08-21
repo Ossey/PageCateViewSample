@@ -8,7 +8,6 @@
 
 #import "PageCateButtonView.h"
 
-
 @interface PageCateButton : UIButton
 
 @property (nonatomic) CGFloat imageTitleSpace;
@@ -105,7 +104,7 @@ selectedIndex = _selectedIndex;
     _separatorStyle = PageCateButtonViewSeparatorStyleDefault;
     [self addSubview:self.cateTitleView];
     [self.cateTitleView addSubview:self.cateTitleContentView];
-
+    
     [self.cateTitleView addObserver:self
                          forKeyPath:NSStringFromSelector(@selector(contentOffset))
                             options:NSKeyValueObservingOptionNew
@@ -290,14 +289,26 @@ selectedIndex = _selectedIndex;
     }
 }
 
+
 ////////////////////////////////////////////////////////////////////////
 #pragma mark - Private delegate
 ////////////////////////////////////////////////////////////////////////
 
 - (void)_didSelectedButtonItem:(PageCateButtonItem *)buttonItem {
     _selectedIndex = buttonItem.index;
-    if (self.delegate && [self.delegate respondsToSelector:@selector(pageCateButtonView:didSelectedAtIndex:)]) {
-        [self.delegate pageCateButtonView:self didSelectedAtIndex:buttonItem.index];
+    if (self.delegate && [self.delegate respondsToSelector:@selector(pageCateButtonView:didSelectedIndex:previousIndex:)]) {
+        [self.delegate pageCateButtonView:self didSelectedIndex:buttonItem.index previousIndex:self.previousSelectedBtnItem.index];
+    }
+    
+    // 更新上次选中按钮的状态
+    if (!self.previousSelectedBtnItem) {
+        self.previousSelectedBtnItem = buttonItem;
+    }
+    else if (buttonItem && self.previousSelectedBtnItem == buttonItem) {
+    }
+    else if (self.previousSelectedBtnItem && self.previousSelectedBtnItem != buttonItem) {
+        self.previousSelectedBtnItem.selected = NO;
+        self.previousSelectedBtnItem = buttonItem;
     }
 }
 
@@ -330,19 +341,9 @@ selectedIndex = _selectedIndex;
 
 - (void)selectedButtonItemChange:(PageCateButtonItem *)buttonItem {
     
-    if (!self.previousSelectedBtnItem) {
-        buttonItem.selected = YES;
-        self.previousSelectedBtnItem = buttonItem;
-    }
-    else if (buttonItem && self.previousSelectedBtnItem == buttonItem) {
-        buttonItem.selected = YES;
-    }
-    else if (self.previousSelectedBtnItem && self.previousSelectedBtnItem != buttonItem) {
-        self.previousSelectedBtnItem.selected = NO;
-        buttonItem.selected  = YES;
-        self.previousSelectedBtnItem = buttonItem;
-    }
+    buttonItem.selected = YES;
     
+    // 对选中的按钮进行缩放
     if (self.itemScale > 0) {
         for (NSInteger i = 0; i < self.buttonItems.count; ++i) {
             // 先恢复所有按钮的缩放值
@@ -510,7 +511,7 @@ selectedIndex = _selectedIndex;
 }
 
 - (void)setupConstraints {
-
+    
     [self _removeAllConstraints];
     
     
@@ -535,22 +536,22 @@ selectedIndex = _selectedIndex;
     
     if (![self canDisplayRightButton]) {
         _cateTitleViewRightConstraint = [NSLayoutConstraint constraintWithItem:self.cateTitleView
-                                                         attribute:NSLayoutAttributeRight
-                                                         relatedBy:NSLayoutRelationEqual
-                                                            toItem:self
-                                                         attribute:NSLayoutAttributeRight
-                                                        multiplier:1.0
-                                                          constant:0.0];
+                                                                     attribute:NSLayoutAttributeRight
+                                                                     relatedBy:NSLayoutRelationEqual
+                                                                        toItem:self
+                                                                     attribute:NSLayoutAttributeRight
+                                                                    multiplier:1.0
+                                                                      constant:0.0];
         [self.rightItem.button removeFromSuperview];
     } else {
         
         _cateTitleViewRightConstraint = [NSLayoutConstraint constraintWithItem:self.cateTitleView
-                                                         attribute:NSLayoutAttributeRight
-                                                         relatedBy:NSLayoutRelationEqual
-                                                            toItem:self.rightItem.button
-                                                         attribute:NSLayoutAttributeLeft
-                                                        multiplier:1.0
-                                                          constant:0.0];
+                                                                     attribute:NSLayoutAttributeRight
+                                                                     relatedBy:NSLayoutRelationEqual
+                                                                        toItem:self.rightItem.button
+                                                                     attribute:NSLayoutAttributeLeft
+                                                                    multiplier:1.0
+                                                                      constant:0.0];
         
         // 消除约束的警告：把其中一个关于superview的约束等级修改为High，就可以了；既消除了警告，也不影响视图的现实
         // rightButton
@@ -611,12 +612,12 @@ selectedIndex = _selectedIndex;
         
         // scrollView bottom
         cateTitleViewBottom = [NSLayoutConstraint constraintWithItem:self.cateTitleView
-                                                         attribute:NSLayoutAttributeBottom
-                                                         relatedBy:NSLayoutRelationEqual
-                                                            toItem:self.separatorView
-                                                         attribute:NSLayoutAttributeTop
-                                                        multiplier:1.0
-                                                          constant:0.0];
+                                                           attribute:NSLayoutAttributeBottom
+                                                           relatedBy:NSLayoutRelationEqual
+                                                              toItem:self.separatorView
+                                                           attribute:NSLayoutAttributeTop
+                                                          multiplier:1.0
+                                                            constant:0.0];
     }
     else {
         [_separatorView removeFromSuperview];
@@ -636,22 +637,22 @@ selectedIndex = _selectedIndex;
     }
     cateTitleViewBottom.priority = UILayoutPriorityDefaultHigh;
     [self addConstraint:cateTitleViewBottom];
-
+    
     
     [self.cateTitleView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|[cateTitleContentView]|"
                                                                                options:kNilOptions
                                                                                metrics:nil
                                                                                  views:subviewDict]];
     NSLayoutConstraint *cateTitleContentViewHeight = [NSLayoutConstraint constraintWithItem:self.cateTitleContentView
-                                 attribute:NSLayoutAttributeHeight
-                                 relatedBy:NSLayoutRelationEqual
-                                    toItem:self.cateTitleView
-                                 attribute:NSLayoutAttributeHeight
-                                multiplier:1.0
-                                  constant:0.0];
+                                                                                  attribute:NSLayoutAttributeHeight
+                                                                                  relatedBy:NSLayoutRelationEqual
+                                                                                     toItem:self.cateTitleView
+                                                                                  attribute:NSLayoutAttributeHeight
+                                                                                 multiplier:1.0
+                                                                                   constant:0.0];
     cateTitleContentViewHeight.priority = UILayoutPriorityDefaultHigh;
     [self.cateTitleView addConstraint:cateTitleContentViewHeight];
-
+    
 }
 
 - (BOOL)canDisplaySeparatorView {
@@ -759,7 +760,7 @@ selectedIndex = _selectedIndex;
 
 - (CGFloat)contentWidth {
     if (_contentWidth <= 0) {
-    
+        
         NSString *currentText = self.button.currentTitle;
         UIImage *currentImage = self.button.currentImage;
         _contentWidth = [currentText sizeWithMaxSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:self.textFont].width;
@@ -856,10 +857,10 @@ selectedIndex = _selectedIndex;
 
 - (CGRect)titleRectForContentRect:(CGRect)contentRect {
     if (self.imageView.image) {
-            return CGRectMake(0.0, self.imageView.bounds.size.height, self.bounds.size.width, self.bounds.size.height-self.imageView.bounds.size.height);
+        return CGRectMake(0.0, self.imageView.bounds.size.height, self.bounds.size.width, self.bounds.size.height-self.imageView.bounds.size.height);
     }
     return CGRectMake(0.0, 0.0, self.bounds.size.width, self.bounds.size.height);
-
+    
 }
 
 - (void)setTitle:(NSString *)title forState:(UIControlState)state {
@@ -887,7 +888,7 @@ selectedIndex = _selectedIndex;
 - (void)setButtonItems:(NSArray<PageCateButtonItem *> *)buttonItems {
     _buttonItems = buttonItems;
     
-   
+    
     [self reloadCateButtons];
 }
 
@@ -1115,3 +1116,5 @@ selectedIndex = _selectedIndex;
     [self setIndicatoHeight:_indicatoHeight];
 }
 @end
+
+

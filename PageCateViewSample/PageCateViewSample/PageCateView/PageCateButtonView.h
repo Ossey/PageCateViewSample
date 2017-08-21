@@ -27,7 +27,7 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 
 - (NSArray<PageCateButtonItem *> *)buttonItemsForPageCateButtonView;
 @optional
-- (void)pageCateButtonView:(PageCateButtonView *)view didSelectedAtIndex:(NSInteger)index;
+- (void)pageCateButtonView:(PageCateButtonView *)view didSelectedIndex:(NSInteger)selectedIndex previousIndex:(NSInteger)previousIndex;
 - (void)pageCateButtonView:(PageCateButtonView *)view didSelecteRightButtonItem:(PageCateButtonItem *)rightItem;
 - (PageCateButtonItem *)rightButtonItemForPageCateButtonView;
 
@@ -82,3 +82,5 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 @end
 
 NS_ASSUME_NONNULL_END
+
+

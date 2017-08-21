@@ -120,10 +120,10 @@
                                                                  options:kNilOptions metrics:nil
                                                                    views:viewDict]];
     
-//    __weak typeof(self) weakSelf = self;
-//    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillChangeStatusBarFrameNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
-////        [weakSelf scrollToIndex:weakSelf.currentIndex];
-//    }];
+    //    __weak typeof(self) weakSelf = self;
+    //    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillChangeStatusBarFrameNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+    ////        [weakSelf scrollToIndex:weakSelf.currentIndex];
+    //    }];
 }
 
 
@@ -184,9 +184,9 @@
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-        if (self.triggerScrollTarget == self.cateButtonView) {
-            return;
-        }
+    if (self.triggerScrollTarget == self.cateButtonView) {
+        return;
+    }
     
     [self __scrolling];
 }
@@ -255,10 +255,10 @@
 #pragma mark - PageCateButtonViewDelegate
 ////////////////////////////////////////////////////////////////////////
 
-- (void)pageCateButtonView:(PageCateButtonView *)view didSelectedAtIndex:(NSInteger)index {
+- (void)pageCateButtonView:(PageCateButtonView *)view didSelectedIndex:(NSInteger)selectedIndex previousIndex:(NSInteger)previousIndex {
     self.triggerScrollTarget = view;
-    [self scrollToIndex:index];
-    
+    [self scrollToIndex:selectedIndex];
+    [self __didScrollFromIndex:previousIndex toIndex:selectedIndex progress:1.0];
 }
 
 - (NSArray<PageCateButtonItem *> *)buttonItemsForPageCateButtonView {
@@ -340,3 +340,5 @@
 }
 
 @end
+
+

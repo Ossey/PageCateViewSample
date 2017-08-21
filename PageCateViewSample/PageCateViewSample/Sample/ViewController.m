@@ -68,7 +68,10 @@ static const NSInteger count = 8;
 #pragma mark - PageContainerViewDelegate
 ////////////////////////////////////////////////////////////////////////
 
-- (void)pageContainerView:(PageContainerView *)pageContentView didScrollFromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress {
+- (void)pageContainerView:(PageContainerView *)pageContentView
+       didScrollFromIndex:(NSInteger)fromIndex
+                  toIndex:(NSInteger)toIndex
+                 progress:(CGFloat)progress {
 
 }
 
