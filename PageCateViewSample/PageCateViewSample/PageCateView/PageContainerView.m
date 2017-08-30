@@ -18,7 +18,7 @@
 
 @end
 
-@interface PageContainerView () <UICollectionViewDelegate, UICollectionViewDataSource, PageCateButtonViewDelegate>
+@interface PageContainerView () <UICollectionViewDelegate, UICollectionViewDataSource, PageCateButtonViewDelegate, UICollectionViewDelegateFlowLayout>
 
 @property (nonatomic, strong) UICollectionView *collectionView;
 @property (nonatomic, assign) CGPoint startScrollOffset;
@@ -41,7 +41,7 @@
 {
     self = [super initWithFrame:frame];
     if (self) {
-        [self __setup];
+        [self setupViews];
     }
     return self;
 }
@@ -50,7 +50,7 @@
 {
     self = [super initWithCoder:coder];
     if (self) {
-        [self __setup];
+        [self setupViews];
     }
     return self;
 }
@@ -108,22 +108,18 @@
     return _collectionView;
 }
 
-- (void)__setup {
+- (void)setupViews {
     self.startScrollOffset = CGPointZero;
     [self addSubview:self.collectionView];
     NSDictionary *viewDict = @{@"collectionView": self.collectionView};
-    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|[collectionView]|"
-                                                                 options:kNilOptions
-                                                                 metrics:nil
-                                                                   views:viewDict]];
-    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[collectionView]|"
-                                                                 options:kNilOptions metrics:nil
-                                                                   views:viewDict]];
     
-    //    __weak typeof(self) weakSelf = self;
-    //    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillChangeStatusBarFrameNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
-    ////        [weakSelf scrollToIndex:weakSelf.currentIndex];
-    //    }];
+    NSArray *collectionViewConstraints = @[
+                                           [NSLayoutConstraint constraintsWithVisualFormat:@"|[collectionView]|" options:kNilOptions metrics:nil views:viewDict],
+                                           
+                                           [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[collectionView]|" options:kNilOptions metrics:nil views:viewDict]
+                                           ];
+    [self addConstraints:[collectionViewConstraints valueForKeyPath:@"@unionOfArrays.self"]];
+    
 }
 
 
@@ -175,6 +171,7 @@
     return cell;
 }
 
+
 ////////////////////////////////////////////////////////////////////////
 #pragma mark - UIScrollViewDelegate
 ////////////////////////////////////////////////////////////////////////
@@ -184,6 +181,11 @@
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    if (CGSizeEqualToSize(scrollView.contentSize, CGSizeZero) ||
+        scrollView.contentSize.height <= 0) {
+        // mark: 第一次滚动collectionView时contentSize不对，height为0，导致无论如何刷新的都是一个cell
+        [self scrollToIndex:self.currentIndex animated:NO];
+    }
     if (self.triggerScrollTarget == self.cateButtonView) {
         return;
     }
@@ -243,11 +245,16 @@
     }
     return self.childViewControllers.count;
 }
+
 - (void)scrollToIndex:(NSInteger)toIndex {
+    [self scrollToIndex:toIndex animated:YES];
+}
+
+- (void)scrollToIndex:(NSInteger)toIndex animated:(BOOL)animated {
     self.currentIndex = toIndex;
     [self layoutIfNeeded];
     CGFloat offsetX = toIndex * MAX(self.collectionView.frame.size.width, [UIScreen mainScreen].bounds.size.width);
-    [self.collectionView setContentOffset:CGPointMake(offsetX, 0) animated:YES];
+    [self.collectionView setContentOffset:CGPointMake(offsetX, 0) animated:animated];
     
 }
 
@@ -308,31 +315,22 @@
     if (_channelView == channelView) {
         return;
     }
-    [self.contentView removeConstraints:channelView.constraints];
+    [channelView removeConstraintsOfViewFromView:self.contentView];
     _channelView = channelView;
     [self.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     if (_channelView) {
         _channelView.translatesAutoresizingMaskIntoConstraints = NO;
         [self.contentView addSubview:channelView];
         NSDictionary *viewDict = @{@"channelView": channelView};
-        [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|[channelView]|" options:kNilOptions
-                                                                                 metrics:nil
-                                                                                   views:viewDict]];
-        [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[channelView]|"
-                                                                                 options:kNilOptions metrics:nil
-                                                                                   views:viewDict]];
+        NSArray *channelViewConstraints = @[
+                                            [NSLayoutConstraint constraintsWithVisualFormat:@"|[channelView]|" options:kNilOptions metrics:nil views:viewDict],
+                                            
+                                            [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[channelView]|" options:kNilOptions metrics:nil views:viewDict]
+                                            ];
+        [self addConstraints:[channelViewConstraints valueForKeyPath:@"@unionOfArrays.self"]];
     }
     
 }
-
-- (instancetype)initWithFrame:(CGRect)frame {
-    if (self = [super initWithFrame:frame]) {
-        self.channelView.hidden = NO;
-    }
-    
-    return self;
-}
-
 
 - (void)dealloc {
     
@@ -340,5 +338,6 @@
 }
 
 @end
+
 
 

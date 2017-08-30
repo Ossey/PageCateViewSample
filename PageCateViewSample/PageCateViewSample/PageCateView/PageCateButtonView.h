@@ -33,6 +33,10 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 
 @end
 
+@interface UIView (ConstraintsExtend)
+- (void)removeConstraintsOfViewFromView:(UIView *)view;
+@end
+
 @interface PageCateButtonView : UIView
 
 @property (nonatomic, weak) id<PageCateButtonViewDelegate> delegate;
