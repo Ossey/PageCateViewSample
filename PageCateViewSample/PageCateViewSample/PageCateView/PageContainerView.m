@@ -193,6 +193,23 @@
     [self __scrolling];
 }
 
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
+    if (self.triggerScrollTarget == self.cateButtonView) {
+        return;
+    }
+    [self __scrolling];
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
+    if (self.triggerScrollTarget == self.cateButtonView) {
+        return;
+    }
+    if (!decelerate) {
+        [self __scrolling];
+    }
+}
+
+
 - (void)__scrolling {
     CGFloat progress = 0;
     NSInteger fromIndex = 0;
@@ -232,7 +249,8 @@
 }
 
 - (void)__didScrollFromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex progress:(CGFloat)progress {
-    if (self.delegate && [self.delegate respondsToSelector:@selector(pageContainerView:didScrollFromIndex:toIndex:progress:)]) {
+    BOOL flag = fromIndex == toIndex && fromIndex != 0;
+    if (!flag && self.delegate && [self.delegate respondsToSelector:@selector(pageContainerView:didScrollFromIndex:toIndex:progress:)]) {
         [self.delegate pageContainerView:self didScrollFromIndex:fromIndex toIndex:toIndex progress:progress];
     }
     [self.cateButtonView scrollButtonFormIndex:fromIndex toIndex:toIndex progress:progress];

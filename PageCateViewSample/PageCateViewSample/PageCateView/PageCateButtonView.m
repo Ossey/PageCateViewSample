@@ -148,12 +148,12 @@ selectedIndex = _selectedIndex;
 
 - (void)_removeAllConstraints {
     [self.cateTitleContentView removeConstraints:self.cateTitleContentView.constraints];
-    [self.cateTitleView removeConstraints:self.cateTitleContentView.constraints];
-    [self removeConstraints:self.cateTitleView.constraints];
-    [self removeConstraints:self.rightItem.button.constraints];
-    [self removeConstraints:self.separatorView.constraints];
+    [self.cateTitleContentView removeConstraintsOfViewFromView:self.cateTitleView];
+    [self.cateTitleView removeConstraintsOfViewFromView:self];
+    [self.rightItem.button removeConstraintsOfViewFromView:self];
+    [self.separatorView removeConstraintsOfViewFromView:self];
     [self removeConstraint:_cateTitleViewRightConstraint];
-    [self removeConstraints:self.cateTitleContentView.constraints];
+    [self.cateTitleContentView removeConstraintsOfViewFromView:self];
     // 只移除self != firstItem, 防止将外界添加给self的约束移除掉了
     [[self.constraints mutableCopy] enumerateObjectsUsingBlock:^(__kindof NSLayoutConstraint * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (![obj.firstItem isEqual:self]) {
@@ -391,9 +391,15 @@ selectedIndex = _selectedIndex;
     PageCateButtonItem *toItem = self.buttonItems[toIndex];
     _selectedIndex = toIndex;
     [self setupCenterForButtonItem:toItem];
-    if (progress >= 1.0) {
-        [self applyButtonSelectedState:toItem];
-    }
+    [self applyButtonSelectedState:toItem];
+    /*
+     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSelected == YES"];
+     NSArray *selectedButtons = [self.buttonItems filteredArrayUsingPredicate:predicate];
+     if (selectedButtons.count > 1 && [selectedButtons containsObject:toItem]) {
+     [selectedButtons makeObjectsPerformSelector:@selector(setSelected:) withObject:@(NO)];
+     toItem.selected = YES;
+     }
+     */
     if (![self isCanScroll]) {
         if (self.indicatoScrollAnimated) {
             // 改变按钮的状态
@@ -1123,6 +1129,7 @@ selectedIndex = _selectedIndex;
     [self setIndicatoHeight:_indicatoHeight];
 }
 @end
+
 
 
 @implementation UIView (ConstraintsExtend)
