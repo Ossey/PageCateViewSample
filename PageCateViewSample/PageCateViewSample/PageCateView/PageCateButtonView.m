@@ -300,6 +300,10 @@ selectedIndex = _selectedIndex;
         [self.delegate pageCateButtonView:self didSelectedIndex:buttonItem.index previousIndex:self.previousSelectedBtnItem.index];
     }
     
+    [self applyButtonSelectedState:buttonItem];
+}
+
+- (void)applyButtonSelectedState:(PageCateButtonItem *)buttonItem {
     // 更新上次选中按钮的状态
     if (!self.previousSelectedBtnItem) {
         self.previousSelectedBtnItem = buttonItem;
@@ -311,6 +315,7 @@ selectedIndex = _selectedIndex;
         self.previousSelectedBtnItem = buttonItem;
     }
 }
+
 
 - (PageCateButtonItem *)_rightButtonItemForPageCateButtonView {
     if (self.delegate && [self.delegate respondsToSelector:@selector(rightButtonItemForPageCateButtonView)]) {
@@ -386,7 +391,9 @@ selectedIndex = _selectedIndex;
     PageCateButtonItem *toItem = self.buttonItems[toIndex];
     _selectedIndex = toIndex;
     [self setupCenterForButtonItem:toItem];
-    
+    if (progress >= 1.0) {
+        [self applyButtonSelectedState:toItem];
+    }
     if (![self isCanScroll]) {
         if (self.indicatoScrollAnimated) {
             // 改变按钮的状态
