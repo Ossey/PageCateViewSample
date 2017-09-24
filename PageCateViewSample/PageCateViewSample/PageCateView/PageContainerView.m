@@ -8,6 +8,15 @@
 
 #import "PageContainerView.h"
 
+/// scrollView 滚动中的方向
+typedef NS_ENUM(NSInteger, PageContainerViewScrollingDirection) {
+    PageContainerViewScrollingDirectionNotKnow,
+    PageContainerViewScrollingDirectionLeft,
+    PageContainerViewScrollingDirectionRight,
+    PageContainerViewScrollingDirectionUp,
+    PageContainerViewScrollingDirectionDown,
+};
+
 @interface PageContainerViewFlowLayout : UICollectionViewFlowLayout
 
 @end
@@ -17,6 +26,8 @@
 @property (nonatomic, copy) BOOL (^shouldRecognizeSimultaneouslyBlock)(UIGestureRecognizer *gestureRecognizer);
 /** 允许多手势同时存在，default is YES */
 @property (nonatomic, assign) BOOL shouldAllowRecognizeSimultaneously;
+/** scrollView 滚动中的方向，相对于上次滚动 */
+@property (nonatomic, assign) PageContainerViewScrollingDirection scrollingDirection;
 
 @end
 
@@ -135,7 +146,6 @@
     _shouldAllowRecognizeSimultaneously = shouldAllowRecognizeSimultaneously;
     self.collectionView.shouldAllowRecognizeSimultaneously = shouldAllowRecognizeSimultaneously;
 }
-
 
 - (void)setDelegate:(id<PageContainerViewDelegate>)delegate {
     if (_delegate == delegate) {
@@ -372,7 +382,51 @@
 
 @end
 
+static void * PageCollectionViewContentOffsetContext = &PageCollectionViewContentOffsetContext;
+
 @implementation PageCollectionView
+
+- (instancetype)initWithFrame:(CGRect)frame collectionViewLayout:(UICollectionViewLayout *)layout {
+    if (self = [super initWithFrame:frame collectionViewLayout:layout]) {
+        [self commonInit];
+    }
+    return self;
+}
+
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+    self = [super initWithCoder:coder];
+    if (self) {
+        [self commonInit];
+    }
+    return self;
+}
+
+- (void)commonInit {
+    
+    [self addObserver:self forKeyPath:NSStringFromSelector(@selector(contentOffset)) options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:PageCollectionViewContentOffsetContext];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+{
+    if (context == PageCollectionViewContentOffsetContext && [keyPath isEqualToString:NSStringFromSelector(@selector(contentOffset))]) {
+        if ([change[@"new"] CGPointValue].y > [change[@"old"] CGPointValue].y  ) { // 向上滚动
+            self.scrollingDirection = PageContainerViewScrollingDirectionUp;
+        } else if ([change[@"new"] CGPointValue].y < [change[@"old"] CGPointValue].y  ) { // 向下滚动
+            self.scrollingDirection = PageContainerViewScrollingDirectionDown;
+        }
+        
+        if ([change[@"new"] CGPointValue].x > [change[@"old"] CGPointValue].x  ) { // 向左滚动
+            self.scrollingDirection = PageContainerViewScrollingDirectionLeft;
+        } else if ([change[@"new"] CGPointValue].x < [change[@"old"] CGPointValue].x  ) { // 向右滚动
+            self.scrollingDirection = PageContainerViewScrollingDirectionRight;
+        }
+        
+    } else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
+}
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     
@@ -380,7 +434,7 @@
     __weak typeof(self) weakSelf = self;
     // 是否运行多手势同时存在
     self.shouldRecognizeSimultaneouslyBlock = ^BOOL(UIGestureRecognizer *gestureRecognizer) {
-        if (weakSelf.contentOffset.x <= 0.0 && self.shouldAllowRecognizeSimultaneously) {
+        if (weakSelf.contentOffset.x <= 0.0 && self.shouldAllowRecognizeSimultaneously && self.scrollingDirection == PageContainerViewScrollingDirectionRight) {
             return YES;
         }
         return NO;
@@ -398,9 +452,7 @@
 }
 
 - (void)dealloc {
-    NSLog(@"%s", __func__);
+    [self removeObserver:self forKeyPath:NSStringFromSelector(@selector(contentOffset)) context:PageCollectionViewContentOffsetContext];
 }
 
 @end
-
-
