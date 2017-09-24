@@ -131,6 +131,11 @@
     
 }
 
+- (void)setShouldAllowRecognizeSimultaneously:(BOOL)shouldAllowRecognizeSimultaneously {
+    _shouldAllowRecognizeSimultaneously = shouldAllowRecognizeSimultaneously;
+    self.collectionView.shouldAllowRecognizeSimultaneously = shouldAllowRecognizeSimultaneously;
+}
+
 
 - (void)setDelegate:(id<PageContainerViewDelegate>)delegate {
     if (_delegate == delegate) {
