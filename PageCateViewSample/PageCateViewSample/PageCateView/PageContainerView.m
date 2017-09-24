@@ -12,6 +12,12 @@
 
 @end
 
+@interface PageCollectionView : UICollectionView
+
+@property (nonatomic, copy) BOOL (^shouldRecognizeSimultaneouslyBlock)(UIGestureRecognizer *gestureRecognizer);
+
+@end
+
 @interface PageContainerViewCell : UICollectionViewCell
 
 @property (nonatomic, strong) UIView *channelView;
@@ -20,7 +26,7 @@
 
 @interface PageContainerView () <UICollectionViewDelegate, UICollectionViewDataSource, PageCateButtonViewDelegate, UICollectionViewDelegateFlowLayout>
 
-@property (nonatomic, strong) UICollectionView *collectionView;
+@property (nonatomic, strong) PageCollectionView *collectionView;
 @property (nonatomic, assign) CGPoint startScrollOffset;
 @property (nonatomic, strong) PageCateButtonView *cateButtonView;
 @property (nonatomic, strong) PageContainerViewFlowLayout *flowLayout;
@@ -91,10 +97,10 @@
     return _rootViewController;
 }
 
-- (UICollectionView *)collectionView {
+- (PageCollectionView *)collectionView {
     if (!_collectionView) {
         _flowLayout = [PageContainerViewFlowLayout new];
-        _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_flowLayout];
+        _collectionView = [[PageCollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_flowLayout];
         _collectionView.showsHorizontalScrollIndicator = NO;
         _collectionView.pagingEnabled = YES;
         _collectionView.bounces = NO;
@@ -181,6 +187,16 @@
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    
+    // 是否运行多手势同时存在
+    self.collectionView.shouldRecognizeSimultaneouslyBlock = ^BOOL(UIGestureRecognizer *gestureRecognizer) {
+        if (scrollView.contentOffset.x <= 0.0) {
+            return YES;
+        }
+        return NO;
+    };
+    
+    
     if (CGSizeEqualToSize(scrollView.contentSize, CGSizeZero) ||
         scrollView.contentSize.height <= 0) {
         // mark: 第一次滚动collectionView时contentSize不对，height为0，导致无论如何刷新的都是一个cell
@@ -192,7 +208,6 @@
     
     [self __scrolling];
 }
-
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
     if (self.triggerScrollTarget == self.cateButtonView) {
         return;
@@ -220,15 +235,15 @@
     if (currentOffsetX > self.startScrollOffset.x) {
         // 左滑
         progress = currentOffsetX / scrollViewW - floor(currentOffsetX / scrollViewW);
-        // 计算 fromIndex
+        // fromIndex
         fromIndex = currentOffsetX / scrollViewW;
-        // 计算 toIndex
+        // toIndex
         toIndex = fromIndex + 1;
         if (toIndex >= self.totalChanelCount) {
             progress = 1;
             toIndex = fromIndex;
         }
-        // 如果完全划过去
+        // 直接滑过去
         if (currentOffsetX - self.startScrollOffset.x == scrollViewW) {
             progress = 1;
             toIndex = fromIndex;
@@ -237,9 +252,9 @@
     else {
         // 右滑
         progress = 1 - (currentOffsetX / scrollViewW - floor(currentOffsetX / scrollViewW));
-        // 计算 toIndex
+        // toIndex
         toIndex = currentOffsetX / scrollViewW;
-        // 计算 fromIndex
+        // fromIndex
         fromIndex = toIndex + 1;
         if (fromIndex >= self.totalChanelCount) {
             fromIndex = self.totalChanelCount - 1;
@@ -357,5 +372,24 @@
 
 @end
 
+@implementation PageCollectionView
 
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    self.scrollEnabled = YES;
+    return [super hitTest:point withEvent:event];
+}
 
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if (gestureRecognizer.view == self) {
+        if (self.shouldRecognizeSimultaneouslyBlock) {
+            return self.shouldRecognizeSimultaneouslyBlock(gestureRecognizer);
+        }
+    }
+    return NO;
+}
+
+- (void)dealloc {
+    NSLog(@"%s", __func__);
+}
+
+@end
