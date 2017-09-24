@@ -35,6 +35,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, weak) id<PageContainerViewDelegate> delegate;
 @property (nonatomic, assign) BOOL scrollEnabled;
+/** 允许多手势同时存在, default is YES, 控制侧滑返回 */
+@property (nonatomic, assign) BOOL shouldAllowRecognizeSimultaneously;
 
 - (void)scrollToIndex:(NSInteger)toIndex;
 
@@ -43,5 +45,6 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 NS_ASSUME_NONNULL_END
+
 
 

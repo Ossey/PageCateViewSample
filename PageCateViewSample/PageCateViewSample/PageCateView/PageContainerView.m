@@ -15,6 +15,8 @@
 @interface PageCollectionView : UICollectionView
 
 @property (nonatomic, copy) BOOL (^shouldRecognizeSimultaneouslyBlock)(UIGestureRecognizer *gestureRecognizer);
+/** 允许多手势同时存在，default is YES */
+@property (nonatomic, assign) BOOL shouldAllowRecognizeSimultaneously;
 
 @end
 
@@ -115,6 +117,7 @@
 }
 
 - (void)setupViews {
+    self.shouldAllowRecognizeSimultaneously = YES;
     self.startScrollOffset = CGPointZero;
     [self addSubview:self.collectionView];
     NSDictionary *viewDict = @{@"collectionView": self.collectionView};
@@ -187,15 +190,6 @@
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    
-    // 是否运行多手势同时存在
-    self.collectionView.shouldRecognizeSimultaneouslyBlock = ^BOOL(UIGestureRecognizer *gestureRecognizer) {
-        if (scrollView.contentOffset.x <= 0.0) {
-            return YES;
-        }
-        return NO;
-    };
-    
     
     if (CGSizeEqualToSize(scrollView.contentSize, CGSizeZero) ||
         scrollView.contentSize.height <= 0) {
@@ -323,6 +317,7 @@
     [self.collectionView reloadData];
 }
 
+
 @end
 
 @implementation PageContainerViewFlowLayout
@@ -375,8 +370,17 @@
 @implementation PageCollectionView
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
-    self.scrollEnabled = YES;
-    return [super hitTest:point withEvent:event];
+    
+    UIView *touchView = [super hitTest:point withEvent:event];
+    __weak typeof(self) weakSelf = self;
+    // 是否运行多手势同时存在
+    self.shouldRecognizeSimultaneouslyBlock = ^BOOL(UIGestureRecognizer *gestureRecognizer) {
+        if (weakSelf.contentOffset.x <= 0.0 && self.shouldAllowRecognizeSimultaneously) {
+            return YES;
+        }
+        return NO;
+    };
+    return touchView;
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
@@ -393,3 +397,5 @@
 }
 
 @end
+
+
