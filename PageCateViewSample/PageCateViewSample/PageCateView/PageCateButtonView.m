@@ -36,13 +36,15 @@
 @property (nonatomic, assign) CGFloat separatorHeight;
 
 - (PageCateButtonItem *)getCurrentSelectedButtonitem;
-- (void)updateUpderLinePointForButtonItem:(PageCateButtonItem *)buttonItem;
+- (void)updateIndicatoViewPointForButtonItem:(PageCateButtonItem *)buttonItem;
 // cateTitleView 不可以滚动，indicato 可以滚动
 - (void)indicatoViewnNotFollowCateTitleViewViewlWithProgress:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem;
 /// indicato 不跟随 cateTitleView滚动而滚动
 - (void)indicatoViewnNotFollowCateTitleViewViewlWithProgress1:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem;
 // cateTitleView 可以滚动，indicato 随着滚动
 - (void)indicatoViewFollowCateTitleViewViewlWithProgress:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem;
+
+- (void)updateButtonsConstraints;
 
 @end
 
@@ -110,11 +112,19 @@ selectedIndex = _selectedIndex;
                             options:NSKeyValueObservingOptionNew
                             context:NULL];
     
-    
+    __weak typeof(self) weakSelf = self;
+    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidChangeStatusBarOrientationNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+        [weakSelf setupButtonSizeToFltWidth];
+        [weakSelf.cateTitleContentView updateButtonsConstraints];
+        PageCateButtonItem *currentItem = weakSelf.buttonItems[weakSelf.selectedIndex];
+        [weakSelf.cateTitleContentView updateIndicatoViewPointForButtonItem:currentItem];
+        weakSelf.selectedIndex = weakSelf.selectedIndex;
+    }];
 }
 
 - (void)dealloc {
     [self.cateTitleView removeObserver:self forKeyPath:NSStringFromSelector(@selector(contentOffset))];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -186,6 +196,19 @@ selectedIndex = _selectedIndex;
         [self layoutIfNeeded];
     }];
     
+    [self setupButtonSizeToFltWidth];
+    
+    
+    self.cateTitleContentView.buttonItems = self.buttonItems;
+    
+    
+    [self setSelectedIndex:self.selectedIndex];
+    [self setIndicatoStyle:_indicatoStyle];
+    [self setSeparatorStyle:_separatorStyle];
+    
+}
+
+- (void)setupButtonSizeToFltWidth {
     self.cateTitleContentView.scrollViewContentWidth = 0;
     for (NSInteger i = 0; i < self.buttonItems.count; ++i) {
         PageCateButtonItem *buttonItem = self.buttonItems[i];
@@ -193,7 +216,8 @@ selectedIndex = _selectedIndex;
     }
     
     self.cateTitleContentView.scrollViewContentWidth = _itemHorizontalSpacing * (self.buttonItems.count + 1) + self.cateTitleContentView.scrollViewContentWidth;
-    CGFloat contentViewWidth = self.cateTitleView.frame.size.width ?: self.rightItem.button ? CGRectGetWidth([UIScreen mainScreen].bounds) - self.rightItem.contentWidth : CGRectGetWidth([UIScreen mainScreen].bounds);
+    CGFloat contentViewWidth = CGRectGetWidth([UIScreen mainScreen].bounds);
+    contentViewWidth =  self.rightItem.button ? contentViewWidth - self.rightItem.contentWidth : contentViewWidth;
     self.cateTitleContentView.scrollViewContentWidth = ceil(self.cateTitleContentView.scrollViewContentWidth);
     if (![self isCanScroll] && self.sizeToFltWhenScreenNotPaved) {
         self.cateTitleContentView.sizeToFltWidth = (contentViewWidth - (self.buttonItems.count - 1)*_itemHorizontalSpacing) / self.buttonItems.count;
@@ -202,13 +226,6 @@ selectedIndex = _selectedIndex;
     }
     
     self.cateTitleContentView.isCanScroll = [self isCanScroll];
-    self.cateTitleContentView.buttonItems = self.buttonItems;
-    
-    
-    [self setSelectedIndex:self.selectedIndex];
-    [self setIndicatoStyle:_indicatoStyle];
-    [self setSeparatorStyle:_separatorStyle];
-    
 }
 
 
@@ -278,7 +295,7 @@ selectedIndex = _selectedIndex;
     
     [self selectedButtonItemChange:buttonItem];
     [self setupCenterForButtonItem:buttonItem];
-    [self.cateTitleContentView updateUpderLinePointForButtonItem:buttonItem];
+    [self.cateTitleContentView updateIndicatoViewPointForButtonItem:buttonItem];
     [self _didSelectedButtonItem:buttonItem];
 }
 
@@ -715,12 +732,13 @@ selectedIndex = _selectedIndex;
 
 
 - (BOOL)isCanScroll {
-    CGFloat contentWidth = CGRectGetWidth(self.frame) ?: CGRectGetWidth([UIScreen mainScreen].bounds);
+    CGFloat contentWidth = CGRectGetWidth([UIScreen mainScreen].bounds);
     if (self.rightItem.button) {
         return self.cateTitleContentView.scrollViewContentWidth >= contentWidth - self.rightItem.contentWidth;
     }
     return self.cateTitleContentView.scrollViewContentWidth >= contentWidth;
 }
+
 
 @end
 
@@ -909,11 +927,6 @@ selectedIndex = _selectedIndex;
     
     [self.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     
-    NSMutableArray<NSString *> *subviewKeyArray = [NSMutableArray arrayWithCapacity:0];
-    NSMutableDictionary *subviewDict = [NSMutableDictionary dictionaryWithCapacity:0];
-    NSMutableDictionary *metrics = @{@"leftMargin": @(self.itemHorizontalSpacing), @"sizeToFltWidth": @(self.sizeToFltWidth), @"bottomMargin": @(MAX(3, _indicatoHeight))}.mutableCopy;
-    NSMutableString *verticalFormat = [NSMutableString new];
-    
     for (NSInteger i = 0; i < self.buttonItems.count; i++) {
         PageCateButtonItem *buttonItem = self.buttonItems[i];
         buttonItem.index = i;
@@ -930,6 +943,20 @@ selectedIndex = _selectedIndex;
         };
         [self addSubview:buttonItem.button];
         buttonItem.button.translatesAutoresizingMaskIntoConstraints = NO;
+    }
+    
+    [self updateButtonsConstraints];
+}
+
+- (void)updateButtonsConstraints {
+    NSMutableArray<NSString *> *subviewKeyArray = [NSMutableArray arrayWithCapacity:0];
+    NSMutableDictionary *subviewDict = [NSMutableDictionary dictionaryWithCapacity:0];
+    NSMutableDictionary *metrics = @{@"leftMargin": @(self.itemHorizontalSpacing), @"sizeToFltWidth": @(self.sizeToFltWidth), @"bottomMargin": @(MAX(3, _indicatoHeight))}.mutableCopy;
+    NSMutableString *verticalFormat = [NSMutableString new];
+    
+    for (NSInteger i = 0; i < self.buttonItems.count; i++) {
+        PageCateButtonItem *buttonItem = self.buttonItems[i];
+        [buttonItem.button removeConstraintsOfViewFromView:self];
         [subviewKeyArray addObject:[NSString stringWithFormat:@"button_%ld", i]];
         subviewDict[subviewKeyArray.lastObject] = buttonItem.button;
         
@@ -988,9 +1015,9 @@ selectedIndex = _selectedIndex;
 /// under line view 不跟随 cateTitleView滚动而滚动
 - (void)indicatoViewnNotFollowCateTitleViewViewlWithProgress1:(CGFloat)progress fromButtonItem:(PageCateButtonItem *)fromItem toButtonItem:(PageCateButtonItem *)toItem {
     if (progress >= 0.5) {
-        [self updateUpderLinePointForButtonItem:toItem];
+        [self updateIndicatoViewPointForButtonItem:toItem];
     } else {
-        [self updateUpderLinePointForButtonItem:fromItem];
+        [self updateIndicatoViewPointForButtonItem:fromItem];
     }
 }
 
@@ -1039,12 +1066,12 @@ selectedIndex = _selectedIndex;
     self.indicatoView.backgroundColor = self.indicatoBackgroundColor;
     
     if (indicatoStyle == PageCateButtonViewIndicatoStyleDefault) {
-        [self updateUpderLinePointForButtonItem:selectedItem];
+        [self updateIndicatoViewPointForButtonItem:selectedItem];
     }
     
 }
 
-- (void)updateUpderLinePointForButtonItem:(PageCateButtonItem *)buttonItem {
+- (void)updateIndicatoViewPointForButtonItem:(PageCateButtonItem *)buttonItem {
     [UIView performWithoutAnimation:^{
         [self layoutIfNeeded];
     }];

@@ -62,6 +62,7 @@ static const NSInteger count = 8;
     }];
     
     self.cateButtonView.selectedIndex = 1;
+    self.cateButtonView.sizeToFltWhenScreenNotPaved = YES;
 }
 
 ////////////////////////////////////////////////////////////////////////
