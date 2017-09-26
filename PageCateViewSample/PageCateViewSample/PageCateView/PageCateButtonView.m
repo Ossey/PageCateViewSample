@@ -82,7 +82,7 @@ selectedIndex = _selectedIndex;
 {
     self = [super initWithFrame:frame];
     if (self) {
-        [self __setup];
+        [self setupViews];
         _delegate = delegate;
     }
     return self;
@@ -98,12 +98,12 @@ selectedIndex = _selectedIndex;
 {
     self = [super initWithCoder:coder];
     if (self) {
-        [self __setup];
+        [self setupViews];
     }
     return self;
 }
 
-- (void)__setup {
+- (void)setupViews {
     
     _itemHorizontalSpacing = 0.0;
     _separatorHeight = 1.0;
@@ -124,10 +124,8 @@ selectedIndex = _selectedIndex;
         [weakSelf setupButtonSizeToFltWidth];
         [weakSelf setupConstraints];
         [weakSelf.cateTitleContentView updateButtonsConstraints];
-        PageCateButtonItem *currentItem = weakSelf.buttonItems[weakSelf.selectedIndex];
-        [weakSelf.cateTitleContentView updateIndicatoViewPointForButtonItem:currentItem];
+        [weakSelf layoutIfNeeded];
         weakSelf.selectedIndex = weakSelf.selectedIndex;
-        [weakSelf.cateTitleView setContentOffset:CGPointMake(0, 0) animated:YES];
     }];
 }
 
@@ -190,7 +188,7 @@ selectedIndex = _selectedIndex;
     }
     
     NSMutableArray *buttonItems = @[].mutableCopy;
-    for (NSInteger i = 0; i < [self _numberOfButtonItemsInPageCateButtonView] ; ++i) {
+    for (NSInteger i = 0; i < [self _numberOfButtonItemsInPageCateButtonView]; ++i) {
         PageCateButtonItem *item = [self.delegate pageCateButtonView:self atIndex:i];
         NSParameterAssert([item isKindOfClass:[PageCateButtonItem class]]);
         [buttonItems addObject:item];
