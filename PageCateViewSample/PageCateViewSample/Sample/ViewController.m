@@ -10,7 +10,6 @@
 #import "PageCateButtonView.h"
 #import "PageContainerView.h"
 #import "Sample1TableViewController.h"
-#import "Masonry.h"
 
 @interface ViewController () <PageContainerViewDelegate>
 @property (nonatomic, strong) PageCateButtonView *cateButtonView;
@@ -47,7 +46,8 @@ static const NSInteger count = 8;
     self.pageContentView = [[PageContainerView alloc] init];
     self.pageContentView.delegate = self;
     [self.view addSubview:_pageContentView];
-        self.pageContentView.rootViewController = self;
+    self.pageContentView.translatesAutoresizingMaskIntoConstraints = NO;
+    self.pageContentView.rootViewController = self;
     NSMutableArray *vcs = @[].mutableCopy;
     NSInteger i = 0;
     do {
@@ -56,10 +56,11 @@ static const NSInteger count = 8;
         i++;
     } while (i < count);
     self.pageContentView.childViewControllers = vcs;
-    [_pageContentView mas_updateConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(_cateButtonView.mas_bottom);
-        make.left.right.bottom.equalTo(self.view);
-    }];
+    [self.view addConstraints:[@[
+                                @[[NSLayoutConstraint constraintWithItem:_pageContentView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_cateButtonView attribute:NSLayoutAttributeTop multiplier:1.0 constant:0.0],
+                                  [NSLayoutConstraint constraintWithItem:_pageContentView attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeBottom multiplier:1.0 constant:0.0]],
+                                [NSLayoutConstraint constraintsWithVisualFormat:@"|[pageContentView]|" options:kNilOptions metrics:nil views:@{@"pageContentView": _pageContentView}]
+                                ] valueForKeyPath:@"@unionOfArrays.self"]];
     
     self.cateButtonView.selectedIndex = 1;
     self.cateButtonView.sizeToFltWhenScreenNotPaved = YES;
@@ -122,12 +123,12 @@ static const NSInteger count = 8;
         _cateButtonView.itemScale = 0.05;
         _cateButtonView.bounces = YES;
         _cateButtonView.sizeToFltWhenScreenNotPaved = YES;
-        CGFloat cateButtonViewTop = self.navigationController.isNavigationBarHidden ? 0 : 64;
-        [_cateButtonView mas_updateConstraints:^(MASConstraintMaker *make) {
-            make.left.right.equalTo(self.view);
-            make.top.mas_equalTo(cateButtonViewTop);
-            make.height.mas_equalTo(60);
-        }];
+        _cateButtonView.translatesAutoresizingMaskIntoConstraints = NO;
+        id topLayout = self.topLayoutGuide;
+        [self.view addConstraints:[@[
+                                    [NSLayoutConstraint constraintsWithVisualFormat:@"|[cateButtonView]|" options:kNilOptions metrics:nil views:@{@"cateButtonView": _cateButtonView}],
+                                    [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[topLayout][cateButtonView(60)]" options:kNilOptions metrics:nil views:@{@"cateButtonView": _cateButtonView, @"topLayout": topLayout}],
+                                    ] valueForKeyPath:@"@unionOfArrays.self"]];
     }
     [self.view bringSubviewToFront:_cateButtonView];
     return _cateButtonView;
