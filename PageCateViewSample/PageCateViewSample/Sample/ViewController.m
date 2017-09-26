@@ -76,26 +76,25 @@ static const NSInteger count = 8;
 
 }
 
-- (NSArray<PageCateButtonItem *> *)buttonItemsForPageCateButtonView {
-    NSMutableArray *buttonItems = @[].mutableCopy;
-    NSInteger i = 0;
-    do {
-        PageCateButtonItem *buttonItem = [PageCateButtonItem new];
-        buttonItem.contentWidth = 60;
-        NSString *title = nil;
-        if (i <= 12) {
-            title = [NSString stringWithFormat:@"list%ld", i];
-        }
-        else {
-            title = [NSString stringWithFormat:@"list%ld", i+10000];
-        }
-        [buttonItem setTitle:title forState:UIControlStateNormal];
-        NSString *imageName = [NSString stringWithFormat:@"trip_sharing_%ld_publish_selected", i+1];
-        [buttonItem setImage:[UIImage imageNamed:imageName] forState:UIControlStateNormal];
-        [buttonItems addObject:buttonItem];
-        i++;
-    } while (i < count);
-    return buttonItems;
+- (NSInteger)numberOfButtonItemsInPageContainerView {
+    return count;
+}
+
+- (PageCateButtonItem *)pageContainerView:(PageContainerView *)containerView buttonItemAtIndex:(NSInteger)index {
+    
+    PageCateButtonItem *buttonItem = [PageCateButtonItem new];
+    buttonItem.contentWidth = 60;
+    NSString *title = nil;
+    if (index <= 6) {
+        title = [NSString stringWithFormat:@"list%ld", index];
+    }
+    else {
+        title = [NSString stringWithFormat:@"list%ld", index+10000];
+    }
+    [buttonItem setTitle:title forState:UIControlStateNormal];
+    NSString *imageName = [NSString stringWithFormat:@"trip_sharing_%ld_publish_selected", index+1];
+    [buttonItem setImage:[UIImage imageNamed:imageName] forState:UIControlStateNormal];
+    return buttonItem;
 }
 
 - (PageCateButtonItem *)rightButtonItemForPageCateButtonView {
@@ -115,7 +114,7 @@ static const NSInteger count = 8;
 - (PageCateButtonView *)cateButtonView {
     if (!_cateButtonView) {
     
-        _cateButtonView = [[PageCateButtonView alloc] init];
+        _cateButtonView = [[PageCateButtonView alloc] initWithFrame:CGRectZero delegate:self.pageContentView];
         [self.view addSubview:_cateButtonView];
         _cateButtonView.indicatoScrollAnimated = YES;
         _cateButtonView.separatorHeight = 3.0;

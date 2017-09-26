@@ -17,7 +17,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @required
 - (PageCateButtonView *)pageCateButtonViewForContainerView;
-- (NSArray<PageCateButtonItem *> *)buttonItemsForPageCateButtonView;
+
+- (PageCateButtonItem *)pageContainerView:(PageContainerView *)containerView buttonItemAtIndex:(NSInteger)index;
+- (NSInteger)numberOfButtonItemsInPageContainerView;
 
 @optional
 - (UIView *)pageCateChannelViewForContainerView:(PageContainerView *)containerView forIndex:(NSInteger)index;
@@ -26,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-@interface PageContainerView : UIView
+@interface PageContainerView : UIView <PageCateButtonViewDelegate>
 
 - (instancetype)initWithFrame:(CGRect)frame;
 
