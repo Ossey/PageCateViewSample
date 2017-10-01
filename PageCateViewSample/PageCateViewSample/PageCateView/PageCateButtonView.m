@@ -78,25 +78,32 @@ indicatoImage = _indicatoImage,
 indicatoBackgroundColor = _indicatoBackgroundColor,
 selectedIndex = _selectedIndex;
 
-- (instancetype)initWithFrame:(CGRect)frame
+- (instancetype)initWithFrame:(CGRect)frame delegate:(nonnull id<PageCateButtonViewDelegate>)delegate
 {
     self = [super initWithFrame:frame];
     if (self) {
-        [self __setup];
+        [self setupViews];
+        _delegate = delegate;
     }
     return self;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    NSAssert(NO, nil);
+    @throw nil;
 }
 
 - (instancetype)initWithCoder:(NSCoder *)coder
 {
     self = [super initWithCoder:coder];
     if (self) {
-        [self __setup];
+        [self setupViews];
     }
     return self;
 }
 
-- (void)__setup {
+- (void)setupViews {
     
     _itemHorizontalSpacing = 0.0;
     _separatorHeight = 1.0;
@@ -115,9 +122,9 @@ selectedIndex = _selectedIndex;
     __weak typeof(self) weakSelf = self;
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidChangeStatusBarOrientationNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
         [weakSelf setupButtonSizeToFltWidth];
+        [weakSelf setupConstraints];
         [weakSelf.cateTitleContentView updateButtonsConstraints];
-        PageCateButtonItem *currentItem = weakSelf.buttonItems[weakSelf.selectedIndex];
-        [weakSelf.cateTitleContentView updateIndicatoViewPointForButtonItem:currentItem];
+        [weakSelf layoutIfNeeded];
         weakSelf.selectedIndex = weakSelf.selectedIndex;
     }];
 }
@@ -158,12 +165,10 @@ selectedIndex = _selectedIndex;
 
 - (void)_removeAllConstraints {
     [self.cateTitleContentView removeConstraints:self.cateTitleContentView.constraints];
-    [self.cateTitleContentView removeConstraintsOfViewFromView:self.cateTitleView];
-    [self.cateTitleView removeConstraintsOfViewFromView:self];
-    [self.rightItem.button removeConstraintsOfViewFromView:self];
-    [self.separatorView removeConstraintsOfViewFromView:self];
+    [self.cateTitleView removeConstraints:self.cateTitleView.constraints];
+    [self.rightItem.button removeConstraints:self.rightItem.button.constraints];
+    [self.separatorView removeConstraints:self.separatorView.constraints];
     [self removeConstraint:_cateTitleViewRightConstraint];
-    [self.cateTitleContentView removeConstraintsOfViewFromView:self];
     // 只移除self != firstItem, 防止将外界添加给self的约束移除掉了
     [[self.constraints mutableCopy] enumerateObjectsUsingBlock:^(__kindof NSLayoutConstraint * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (![obj.firstItem isEqual:self]) {
@@ -176,8 +181,20 @@ selectedIndex = _selectedIndex;
 
 - (void)reloadSubviews {
     
-    self.rightItem = [self _rightButtonItemForPageCateButtonView];
-    self.buttonItems = [self _buttonItemsForPageCateButtonView];
+    PageCateButtonItem *rightItem  = [self _rightButtonItemForPageCateButtonView];
+    if (self.rightItem != rightItem) {
+        [self.rightItem.button removeFromSuperview];
+        self.rightItem = rightItem;
+    }
+    
+    NSMutableArray *buttonItems = @[].mutableCopy;
+    for (NSInteger i = 0; i < [self _numberOfButtonItemsInPageCateButtonView]; ++i) {
+        PageCateButtonItem *item = [self.delegate pageCateButtonView:self atIndex:i];
+        NSParameterAssert([item isKindOfClass:[PageCateButtonItem class]]);
+        [buttonItems addObject:item];
+    }
+    self.buttonItems = buttonItems;
+    
     if (self.rightItem.button) {
         self.rightItem.index = self.buttonItems.count + 1;
         __weak typeof(self) weakSelf = self;
@@ -353,13 +370,16 @@ selectedIndex = _selectedIndex;
     return NO;
 }
 
-- (NSArray<PageCateButtonItem *> *)_buttonItemsForPageCateButtonView {
-    if (self.delegate) {
-        return [self.delegate buttonItemsForPageCateButtonView];
-    }
-    return nil;
-}
+//- (NSArray<PageCateButtonItem *> *)_buttonItemsForPageCateButtonView {
+//    if (self.delegate) {
+//        return [self.delegate buttonItemsForPageCateButtonView];
+//    }
+//    return nil;
+//}
 
+- (NSInteger)_numberOfButtonItemsInPageCateButtonView {
+    return [self.delegate numberOfButtonItemsInPageCateButtonView];
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -553,6 +573,9 @@ selectedIndex = _selectedIndex;
     NSMutableArray<NSString *> *subviewKeyArray = [NSMutableArray arrayWithCapacity:0];
     NSMutableDictionary *subviewDict = [NSMutableDictionary dictionaryWithCapacity:0];
     
+    [subviewKeyArray addObject:@"cateTitleContentView"];
+    subviewDict[subviewKeyArray.lastObject] = self.cateTitleContentView;
+    
     [self addConstraint:[NSLayoutConstraint constraintWithItem:self.cateTitleView
                                                      attribute:NSLayoutAttributeTop
                                                      relatedBy:NSLayoutRelationEqual
@@ -568,6 +591,7 @@ selectedIndex = _selectedIndex;
                                                      attribute:NSLayoutAttributeLeft
                                                     multiplier:1.0
                                                       constant:0.0]];
+    
     
     if (![self canDisplayRightButton]) {
         _cateTitleViewRightConstraint = [NSLayoutConstraint constraintWithItem:self.cateTitleView
@@ -590,47 +614,40 @@ selectedIndex = _selectedIndex;
         
         // 消除约束的警告：把其中一个关于superview的约束等级修改为High，就可以了；既消除了警告，也不影响视图的现实
         // rightButton
-        NSLayoutConstraint *width = [NSLayoutConstraint constraintWithItem:self.rightItem.button
-                                                                 attribute:NSLayoutAttributeWidth
-                                                                 relatedBy:NSLayoutRelationEqual
-                                                                    toItem:nil
-                                                                 attribute:NSLayoutAttributeNotAnAttribute
-                                                                multiplier:1.0
-                                                                  constant:self.rightItem.contentWidth];
-        NSLayoutConstraint *top = [NSLayoutConstraint constraintWithItem:self.rightItem.button
-                                                               attribute:NSLayoutAttributeTop
-                                                               relatedBy:NSLayoutRelationEqual
-                                                                  toItem:self
-                                                               attribute:NSLayoutAttributeTop
-                                                              multiplier:1.0
-                                                                constant:0.0];
-        NSLayoutConstraint *bottom = [NSLayoutConstraint constraintWithItem:self.rightItem.button
-                                                                  attribute:NSLayoutAttributeBottom
-                                                                  relatedBy:NSLayoutRelationEqual
-                                                                     toItem:self
-                                                                  attribute:NSLayoutAttributeBottom
-                                                                 multiplier:1.0
-                                                                   constant:-self.separatorHeight];
-        NSLayoutConstraint *right = [NSLayoutConstraint constraintWithItem:self.rightItem.button
-                                                                 attribute:NSLayoutAttributeRight
-                                                                 relatedBy:NSLayoutRelationEqual
-                                                                    toItem:self
-                                                                 attribute:NSLayoutAttributeRight
-                                                                multiplier:1.0
-                                                                  constant:0.0];
-        [self addConstraint:top];
-        [self addConstraint:bottom];
-        right.priority = UILayoutPriorityDefaultHigh;
-        [self addConstraint:right];
-        [self addConstraint:width];
-        
+        [self addConstraints:@[
+                               [NSLayoutConstraint constraintWithItem:self.rightItem.button
+                                                            attribute:NSLayoutAttributeWidth
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:nil
+                                                            attribute:NSLayoutAttributeNotAnAttribute
+                                                           multiplier:1.0
+                                                             constant:self.rightItem.contentWidth],
+                               [NSLayoutConstraint constraintWithItem:self.rightItem.button
+                                                            attribute:NSLayoutAttributeTop
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:self
+                                                            attribute:NSLayoutAttributeTop
+                                                           multiplier:1.0
+                                                             constant:0.0],
+                               [NSLayoutConstraint constraintWithItem:self.rightItem.button
+                                                            attribute:NSLayoutAttributeBottom
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:self
+                                                            attribute:NSLayoutAttributeBottom
+                                                           multiplier:1.0
+                                                             constant:-self.separatorHeight],
+                               [NSLayoutConstraint constraintWithItem:self.rightItem.button
+                                                            attribute:NSLayoutAttributeRight
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:self
+                                                            attribute:NSLayoutAttributeRight
+                                                           multiplier:1.0
+                                                             constant:0.0]
+                               ]];
         
     }
     
     [self addConstraint:_cateTitleViewRightConstraint];
-    
-    [subviewKeyArray addObject:@"cateTitleContentView"];
-    subviewDict[subviewKeyArray.lastObject] = self.cateTitleContentView;
     
     NSLayoutConstraint *cateTitleViewBottom = nil;
     if ([self canDisplaySeparatorView]) {
@@ -670,24 +687,25 @@ selectedIndex = _selectedIndex;
                                                           multiplier:1.0
                                                             constant:0.0];
     }
-    cateTitleViewBottom.priority = UILayoutPriorityDefaultHigh;
+
     [self addConstraint:cateTitleViewBottom];
+    
+    // cateTitleContentView
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.cateTitleContentView
+                                                     attribute:NSLayoutAttributeHeight
+                                                     relatedBy:NSLayoutRelationEqual
+                                                        toItem:self
+                                                     attribute:NSLayoutAttributeHeight
+                                                    multiplier:1.0
+                                                      constant:-_separatorHeight]];
     
     
     [self.cateTitleView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|[cateTitleContentView]|"
                                                                                options:kNilOptions
                                                                                metrics:nil
                                                                                  views:subviewDict]];
-    NSLayoutConstraint *cateTitleContentViewHeight = [NSLayoutConstraint constraintWithItem:self.cateTitleContentView
-                                                                                  attribute:NSLayoutAttributeHeight
-                                                                                  relatedBy:NSLayoutRelationEqual
-                                                                                     toItem:self.cateTitleView
-                                                                                  attribute:NSLayoutAttributeHeight
-                                                                                 multiplier:1.0
-                                                                                   constant:0.0];
-    cateTitleContentViewHeight.priority = UILayoutPriorityDefaultHigh;
-    [self.cateTitleView addConstraint:cateTitleContentViewHeight];
-    
+   
+    [self layoutIfNeeded];
 }
 
 - (BOOL)canDisplaySeparatorView {
@@ -730,6 +748,8 @@ selectedIndex = _selectedIndex;
         separatorView.backgroundColor = self.separatorBackgroundColor;
         _separatorView = separatorView;
         separatorView.translatesAutoresizingMaskIntoConstraints = NO;
+        [self addSubview:_separatorView];
+        [self insertSubview:_separatorView belowSubview:_cateTitleView];
     }
     return _separatorView;
 }
@@ -973,10 +993,10 @@ selectedIndex = _selectedIndex;
         
         void (^verticalFormatBlock)(NSString *widthKey) = ^(NSString *widthKey){
             if (i == self.buttonItems.count - 1) {
-                [verticalFormat appendFormat:@"-(%.f@750)-[%@(%@)]-(%.f@750)-", leftMargin, subviewKeyArray[i], widthKey, leftMargin];
+                [verticalFormat appendFormat:@"-(%.f@1000.0)-[%@(%@)]-(%.f@1000.0)-", leftMargin, subviewKeyArray[i], widthKey, leftMargin];
             }
             else {
-                [verticalFormat appendFormat:@"-(%.f@750)-[%@(%@)]", leftMargin, subviewKeyArray[i], widthKey];
+                [verticalFormat appendFormat:@"-(%.f@1000.0)-[%@(%@)]", leftMargin, subviewKeyArray[i], widthKey];
             }
         };
         

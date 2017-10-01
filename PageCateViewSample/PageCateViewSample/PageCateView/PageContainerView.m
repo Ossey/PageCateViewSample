@@ -37,7 +37,7 @@ typedef NS_ENUM(NSInteger, PageContainerViewScrollingDirection) {
 
 @end
 
-@interface PageContainerView () <UICollectionViewDelegate, UICollectionViewDataSource, PageCateButtonViewDelegate, UICollectionViewDelegateFlowLayout>
+@interface PageContainerView () <UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout>
 
 @property (nonatomic, strong) PageCollectionView *collectionView;
 @property (nonatomic, assign) CGPoint startScrollOffset;
@@ -154,7 +154,6 @@ typedef NS_ENUM(NSInteger, PageContainerViewScrollingDirection) {
     _delegate = delegate;
     
     self.cateButtonView = [delegate pageCateButtonViewForContainerView];
-    self.cateButtonView.delegate = self;
 }
 
 - (UIViewController *)getCurrentViewController {
@@ -310,8 +309,13 @@ typedef NS_ENUM(NSInteger, PageContainerViewScrollingDirection) {
     [self __didScrollFromIndex:previousIndex toIndex:selectedIndex progress:1.0];
 }
 
-- (NSArray<PageCateButtonItem *> *)buttonItemsForPageCateButtonView {
-    return [self.delegate buttonItemsForPageCateButtonView];
+
+- (NSInteger)numberOfButtonItemsInPageCateButtonView {
+    return [self.delegate numberOfButtonItemsInPageContainerView];
+}
+
+- (PageCateButtonItem *)pageCateButtonView:(PageCateButtonView *)buttonView atIndex:(NSInteger)index {
+    return [self.delegate pageContainerView:self buttonItemAtIndex:index];
 }
 
 - (PageCateButtonItem *)rightButtonItemForPageCateButtonView {

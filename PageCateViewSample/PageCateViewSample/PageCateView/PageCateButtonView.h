@@ -25,7 +25,11 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 
 @protocol PageCateButtonViewDelegate <NSObject>
 
-- (NSArray<PageCateButtonItem *> *)buttonItemsForPageCateButtonView;
+//- (NSArray<PageCateButtonItem *> *)buttonItemsForPageCateButtonView;
+
+- (PageCateButtonItem *)pageCateButtonView:(PageCateButtonView *)buttonView atIndex:(NSInteger)index;
+- (NSInteger)numberOfButtonItemsInPageCateButtonView;
+
 @optional
 - (void)pageCateButtonView:(PageCateButtonView *)view didSelectedIndex:(NSInteger)selectedIndex previousIndex:(NSInteger)previousIndex;
 - (void)pageCateButtonView:(PageCateButtonView *)view didSelecteRightButtonItem:(PageCateButtonItem *)rightItem;
@@ -63,7 +67,10 @@ typedef NS_ENUM(NSInteger, PageCateButtonViewSeparatorStyle) {
 /** 标题按钮缩放比例, 默认为0, 有效范围0.0~1.0 */
 @property (nonatomic, assign) CGFloat itemScale;
 
-- (instancetype)initWithFrame:(CGRect)frame;
+- (instancetype)init NS_UNAVAILABLE;
+- (instancetype)initWithFrame:(CGRect)frame NS_UNAVAILABLE;
+- (instancetype)initWithCoder:(NSCoder *)aDecoder NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithFrame:(CGRect)frame delegate:(id<PageCateButtonViewDelegate>)delegate NS_DESIGNATED_INITIALIZER;
 
 - (void)setButtonItemTitle:(NSString *)title forState:(UIControlState)state index:(NSInteger)index;
 - (void)setButtonItemImage:(UIImage *)image forState:(UIControlState)state index:(NSInteger)index;
