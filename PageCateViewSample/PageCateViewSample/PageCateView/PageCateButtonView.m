@@ -228,6 +228,11 @@ selectedIndex = _selectedIndex;
     self.cateTitleContentView.isCanScroll = [self isCanScroll];
 }
 
+- (void)setBackgroundColor:(UIColor *)backgroundColor {
+    [super setBackgroundColor:backgroundColor];
+    self.cateTitleView.backgroundColor = backgroundColor;
+    self.cateTitleContentView.backgroundColor = backgroundColor;
+}
 
 - (void)setIndicatoStyle:(PageCateButtonViewIndicatoStyle)indicatoStyle {
     _indicatoStyle = indicatoStyle;
